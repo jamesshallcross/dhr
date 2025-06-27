@@ -54,17 +54,17 @@ echo
 
 # Get IP and organization info for root domain and www subdomain
 echo "$(tput setaf 6)HOST INFORMATION:$(tput sgr0)"
-printf "%-40s %-40s %s\n" "HOST" "IP/CNAME" "ORGANIZATION"
+printf "%-36s %-36s %s\n" "HOST" "IP/CNAME" "ORGANIZATION"
 
 # Root domain
 NON_WWW_IP=`dig $dns_server +short $domain | head -n 1`
 if [[ $NON_WWW_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     # It's an IP address
     NON_WWW_ORG=`echo $NON_WWW_IP | xargs whois | grep 'OrgName\|org-name\|descr' | sort -r | head -n 1 | awk '{print $2,$3,$4,$5}'`
-    printf "%-40s $(tput setaf 2)%-40s$(tput sgr0) $(tput setaf 5)%s$(tput sgr0)\n" "$domain" "$NON_WWW_IP" "$NON_WWW_ORG"
+    printf "%-36s $(tput setaf 2)%-36s$(tput sgr0) $(tput setaf 5)%s$(tput sgr0)\n" "$domain" "$NON_WWW_IP" "$NON_WWW_ORG"
 else
     # It's a CNAME or other record
-    printf "%-40s $(tput setaf 3)%-40s$(tput sgr0) $(tput setaf 3)%s$(tput sgr0)\n" "$domain" "$NON_WWW_IP" "(CNAME)"
+    printf "%-36s $(tput setaf 3)%-36s$(tput sgr0) $(tput setaf 3)%s$(tput sgr0)\n" "$domain" "$NON_WWW_IP" "(CNAME)"
 fi
 
 # WWW subdomain  
@@ -72,10 +72,10 @@ WWW_RESULT=`dig $dns_server +short www.$domain | head -n 1`
 if [[ $WWW_RESULT =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     # It's an IP address
     WWW_ORG=`echo $WWW_RESULT | xargs whois | grep 'OrgName\|org-name\|descr' | sort -r | head -n 1 | awk '{print $2,$3,$4,$5}'`
-    printf "%-40s $(tput setaf 2)%-40s$(tput sgr0) $(tput setaf 5)%s$(tput sgr0)\n" "www.$domain" "$WWW_RESULT" "$WWW_ORG"
+    printf "%-36s $(tput setaf 2)%-36s$(tput sgr0) $(tput setaf 5)%s$(tput sgr0)\n" "www.$domain" "$WWW_RESULT" "$WWW_ORG"
 else
     # It's a CNAME - show the CNAME and follow the chain
-    printf "%-40s $(tput setaf 3)%-40s$(tput sgr0) $(tput setaf 3)%s$(tput sgr0)\n" "www.$domain" "$WWW_RESULT" "(CNAME)"
+    printf "%-36s $(tput setaf 3)%-36s$(tput sgr0) $(tput setaf 3)%s$(tput sgr0)\n" "www.$domain" "$WWW_RESULT" "(CNAME)"
     
     # Follow the CNAME chain until we get an IP address
     current_host="$WWW_RESULT"
@@ -84,15 +84,15 @@ else
         if [[ $next_result =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             # Found the final IP address
             FINAL_ORG=`echo $next_result | xargs whois | grep 'OrgName\|org-name\|descr' | sort -r | head -n 1 | awk '{print $2,$3,$4,$5}'`
-            printf "%-40s $(tput setaf 2)%-40s$(tput sgr0) $(tput setaf 5)%s$(tput sgr0)\n" "  -> $current_host" "$next_result" "$FINAL_ORG"
+            printf "%-36s $(tput setaf 2)%-40s$(tput sgr0) $(tput setaf 5)%s$(tput sgr0)\n" "  -> $current_host" "$next_result" "$FINAL_ORG"
             break
         elif [[ -n "$next_result" ]] && [[ "$next_result" != "$current_host" ]]; then
             # Another CNAME in the chain
-            printf "%-40s $(tput setaf 3)%-40s$(tput sgr0) $(tput setaf 3)%s$(tput sgr0)\n" "  -> $current_host" "$next_result" "(CNAME)"
+            printf "%-36s $(tput setaf 3)%-36s$(tput sgr0) $(tput setaf 3)%s$(tput sgr0)\n" "  -> $current_host" "$next_result" "(CNAME)"
             current_host="$next_result"
         else
             # Dead end or loop detected
-            printf "%-40s $(tput setaf 1)%-40s$(tput sgr0) $(tput setaf 1)%s$(tput sgr0)\n" "  -> $current_host" "No A record found" "(Dead end)"
+            printf "%-36s $(tput setaf 1)%-36s$(tput sgr0) $(tput setaf 1)%s$(tput sgr0)\n" "  -> $current_host" "No A record found" "(Dead end)"
             break
         fi
     done
@@ -101,7 +101,7 @@ echo
 
 # HTTP/HTTPS redirect testing
 echo "$(tput setaf 6)HTTP/HTTPS REDIRECT RESULTS:$(tput sgr0)"
-printf "%-34s %-5s %-40s %s\n" "REQUEST URL" "CODE" "REDIRECT URL" "TIME (s)"
+printf "%-30s %-5s %-36s %s\n" "REQUEST URL" "CODE" "REDIRECT URL" "TIME (s)"
 
 # Collect curl results in temp file
 curl -sI http://$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null > /tmp/301.txt
@@ -110,47 +110,47 @@ curl -sI https://$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{r
 curl -sI https://www.$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
 
 # Format the results in 4 columns
-awk -F'|' '{printf "%-34s %-5s %-40s %s\n", $2, $3, $4, $1}' /tmp/301.txt
+awk -F'|' '{printf "%-30s %-5s %-36s %s\n", $2, $3, $4, $1}' /tmp/301.txt
 echo
 rm /tmp/301.txt
 
 # A records for root domain
 echo "$(tput setaf 6)A RECORDS (root domain):$(tput sgr0)"
-dig $dns_server $domain | grep IN | grep -v ";" | grep -v NS | sort -k 5n,5 | awk '{printf "%-40s %-40s %s\n", $1, $2" "$3" "$4, $5}'
+dig $dns_server $domain | grep IN | grep -v ";" | grep -v NS | sort -k 5n,5 | awk '{printf "%-36s %-36s %s\n", $1, $2" "$3" "$4, $5}'
 echo
 
 # A records for www subdomain
 echo "$(tput setaf 6)A RECORDS (www subdomain):$(tput sgr0)"
-dig $dns_server www.$domain | grep IN | grep -v ";" | grep -v NS | awk '{printf "%-40s %-40s %s\n", $1, $2" "$3" "$4, $5}'
+dig $dns_server www.$domain | grep IN | grep -v ";" | grep -v NS | awk '{printf "%-36s %-36s %s\n", $1, $2" "$3" "$4, $5}'
 echo
 
 # MX records
 echo "$(tput setaf 6)MX RECORDS:$(tput sgr0)"
-dig $dns_server MX $domain | grep IN | grep -v ";" | grep MX | sort -k 5n,5 | awk '{printf "%-40s %-40s %s %s\n", $1, $2" "$3" "$4, $5, $6}'
+dig $dns_server MX $domain | grep IN | grep -v ";" | grep MX | sort -k 5n,5 | awk '{printf "%-36s %-36s %s %s\n", $1, $2" "$3" "$4, $5, $6}'
 echo
 echo "$(tput setaf 6)MX SERVER IP ADDRESSES:$(tput sgr0)"
-dig $dns_server MX $domain | grep IN | grep -v ";" | grep -v NS | sort -k 5n,5 | cuts -1 | xargs dig $dns_server | grep IN | grep -v ";" | grep -v NS | grep -v SOA | awk '{printf "%-40s %-40s %s\n", $1, $2" "$3" "$4, $5}'
+dig $dns_server MX $domain | grep IN | grep -v ";" | grep -v NS | sort -k 5n,5 | cuts -1 | xargs dig $dns_server | grep IN | grep -v ";" | grep -v NS | grep -v SOA | awk '{printf "%-36s %-36s %s\n", $1, $2" "$3" "$4, $5}'
 echo
 
 # NS records
 echo "$(tput setaf 6)NS RECORDS:$(tput sgr0)"
-dig $dns_server NS $domain | grep IN | grep -v ";" | sort -k 5n,5 | awk '{printf "%-40s %-40s %s\n", $1, $2" "$3" "$4, $5}'
+dig $dns_server NS $domain | grep IN | grep -v ";" | sort -k 5n,5 | awk '{printf "%-36s %-36s %s\n", $1, $2" "$3" "$4, $5}'
 echo
 
 # TXT records
 echo "$(tput setaf 6)TXT RECORDS:$(tput sgr0)"
-dig $dns_server TXT $domain | grep IN | grep -v ";" | grep -v NS | grep -v SOA | awk '{printf "%-40s %-40s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
+dig $dns_server TXT $domain | grep IN | grep -v ";" | grep -v NS | grep -v SOA | awk '{printf "%-36s %-36s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
 echo
 
 # DMARC record
 echo "$(tput setaf 6)DMARC RECORD:$(tput sgr0)"
-dig $dns_server TXT _dmarc.$domain | grep IN | grep \"v | awk '{printf "%-40s %-40s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
+dig $dns_server TXT _dmarc.$domain | grep IN | grep \"v | awk '{printf "%-36s %-36s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
 echo
 
 # DKIM records (common selectors)
 echo "$(tput setaf 6)DKIM RECORDS:$(tput sgr0)"
-dig $dns_server TXT bozmail._domainkey.$domain | grep IN | grep \"v | awk '{printf "%-40s %-40s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
-dig $dns_server TXT boz._domainkey.$domain | grep IN | grep \"v | awk '{printf "%-40s %-40s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
+dig $dns_server TXT bozmail._domainkey.$domain | grep IN | grep \"v | awk '{printf "%-36s %-36s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
+dig $dns_server TXT boz._domainkey.$domain | grep IN | grep \"v | awk '{printf "%-36s %-36s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
 echo
 
 # Registrar information
