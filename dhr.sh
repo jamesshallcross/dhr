@@ -52,15 +52,32 @@ domain=`echo $domain | awk -F "//" '{print $NF}' | awk -F "www." '{print $NF}' |
 echo -e "Domain : $(tput setaf 1)$domain$(tput sgr0) - finding IP & Ownership..."
 echo
 
-# Get IP and organization info for root domain
-NON_WWW_IP=`dig $dns_server +short $domain | head -n 1 | xargs | sed -e 's/ /, /g'`
-NON_WWW_IP_ORG=`dig $dns_server +short $domain | head -n 1 | xargs whois | grep 'OrgName\|org-name\|descr' | sort -r | head -n 1 | awk '{print $2,$3,$4,$5}'`
-echo -e "IP for root\t: ${NON_WWW_IP}\t: ${NON_WWW_IP_ORG}"
+# Get IP and organization info for root domain and www subdomain
+echo "HOST INFORMATION:"
+printf "%-10s %-25s %s\n" "HOST" "IP/CNAME" "ORGANIZATION"
+printf "%-10s %-25s %s\n" "----" "--------" "------------"
 
-# Get IP and organization info for www subdomain
-WWW_IP=`dig $dns_server +short www.$domain | head -n 1 | xargs | sed -e 's/ /, /g'`
-WWW_IP_ORG=`dig $dns_server +short www.$domain | head -n 1 | xargs whois | grep 'OrgName\|org-name\|descr' | sort -r | head -n 1 | awk '{print $2,$3,$4,$5}'`
-echo -e "IP for www\t: ${WWW_IP}\t: ${WWW_IP_ORG}"
+# Root domain
+NON_WWW_IP=`dig $dns_server +short $domain | head -n 1`
+if [[ $NON_WWW_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    # It's an IP address
+    NON_WWW_ORG=`echo $NON_WWW_IP | xargs whois | grep 'OrgName\|org-name\|descr' | sort -r | head -n 1 | awk '{print $2,$3,$4,$5}'`
+    printf "%-10s %-25s %s\n" "$domain" "$NON_WWW_IP" "$NON_WWW_ORG"
+else
+    # It's a CNAME or other record
+    printf "%-10s %-25s %s\n" "$domain" "$NON_WWW_IP" "(CNAME/redirect)"
+fi
+
+# WWW subdomain  
+WWW_RESULT=`dig $dns_server +short www.$domain | head -n 1`
+if [[ $WWW_RESULT =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    # It's an IP address
+    WWW_ORG=`echo $WWW_RESULT | xargs whois | grep 'OrgName\|org-name\|descr' | sort -r | head -n 1 | awk '{print $2,$3,$4,$5}'`
+    printf "%-10s %-25s %s\n" "www.$domain" "$WWW_RESULT" "$WWW_ORG"
+else
+    # It's a CNAME or other record
+    printf "%-10s %-25s %s\n" "www.$domain" "$WWW_RESULT" "(CNAME/redirect)"
+fi
 echo
 
 # A records for root domain
