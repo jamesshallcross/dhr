@@ -100,8 +100,6 @@ fi
 echo
 
 # HTTP/HTTPS redirect testing
-echo -e "$(tput setaf 6)Checking HTTP/HTTPS + root/www for redirects/errors...$(tput sgr0)"
-echo
 printf 'TIME (s)|REQUEST URL|CODE|REDIRECT URL\n' > /tmp/301.txt
 curl -sI http://$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
 curl -sI http://www.$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
