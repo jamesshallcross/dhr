@@ -102,56 +102,40 @@ echo
 
 # A records for root domain
 echo "$(tput setaf 6)A RECORDS (root domain):$(tput sgr0)"
-printf "%-40s %-40s %s\n" "HOSTNAME" "TTL/CLASS/TYPE" "VALUE"
-printf "%-40s %-40s %s\n" "--------" "--------------" "-----"
-dig $dns_server $domain | grep IN | grep -v ";" | grep -v NS | sort -k 5n,5 | awk '{printf "%-40s $(tput setaf 4)%-40s$(tput sgr0) $(tput setaf 2)%s$(tput sgr0)\n", $1, $2" "$3" "$4, $5}'
+dig $dns_server $domain | grep IN | grep -v ";" | grep -v NS | sort -k 5n,5 | awk '{printf "%-40s %-40s %s\n", $1, $2" "$3" "$4, $5}'
 echo
 
 # A records for www subdomain
 echo "$(tput setaf 6)A RECORDS (www subdomain):$(tput sgr0)"
-printf "%-40s %-40s %s\n" "HOSTNAME" "TTL/CLASS/TYPE" "VALUE"
-printf "%-40s %-40s %s\n" "--------" "--------------" "-----"
-dig $dns_server www.$domain | grep IN | grep -v ";" | grep -v NS | awk '{printf "%-40s $(tput setaf 4)%-40s$(tput sgr0) $(tput setaf 2)%s$(tput sgr0)\n", $1, $2" "$3" "$4, $5}'
+dig $dns_server www.$domain | grep IN | grep -v ";" | grep -v NS | awk '{printf "%-40s %-40s %s\n", $1, $2" "$3" "$4, $5}'
 echo
 
 # MX records
 echo "$(tput setaf 6)MX RECORDS:$(tput sgr0)"
-printf "%-40s %-40s %s\n" "HOSTNAME" "TTL/CLASS/TYPE" "PRIORITY SERVER"
-printf "%-40s %-40s %s\n" "--------" "--------------" "---------------"
-dig $dns_server MX $domain | grep IN | grep -v ";" | grep MX | sort -k 5n,5 | awk '{printf "%-40s $(tput setaf 4)%-40s$(tput sgr0) $(tput setaf 3)%s %s$(tput sgr0)\n", $1, $2" "$3" "$4, $5, $6}'
+dig $dns_server MX $domain | grep IN | grep -v ";" | grep MX | sort -k 5n,5 | awk '{printf "%-40s %-40s %s %s\n", $1, $2" "$3" "$4, $5, $6}'
 echo "$(tput setaf 6)MX SERVER IP ADDRESSES:$(tput sgr0)"
-printf "%-40s %-40s %s\n" "HOSTNAME" "TTL/CLASS/TYPE" "VALUE"
-printf "%-40s %-40s %s\n" "--------" "--------------" "-----"
-dig $dns_server MX $domain | grep IN | grep -v ";" | grep -v NS | sort -k 5n,5 | cuts -1 | xargs dig $dns_server | grep IN | grep -v ";" | grep -v NS | grep -v SOA | awk '{printf "%-40s $(tput setaf 4)%-40s$(tput sgr0) $(tput setaf 2)%s$(tput sgr0)\n", $1, $2" "$3" "$4, $5}'
+dig $dns_server MX $domain | grep IN | grep -v ";" | grep -v NS | sort -k 5n,5 | cuts -1 | xargs dig $dns_server | grep IN | grep -v ";" | grep -v NS | grep -v SOA | awk '{printf "%-40s %-40s %s\n", $1, $2" "$3" "$4, $5}'
 echo
 
 # NS records
 echo "$(tput setaf 6)NS RECORDS:$(tput sgr0)"
-printf "%-40s %-40s %s\n" "HOSTNAME" "TTL/CLASS/TYPE" "VALUE"
-printf "%-40s %-40s %s\n" "--------" "--------------" "-----"
-dig $dns_server NS $domain | grep IN | grep -v ";" | sort -k 5n,5 | awk '{printf "%-40s $(tput setaf 4)%-40s$(tput sgr0) $(tput setaf 3)%s$(tput sgr0)\n", $1, $2" "$3" "$4, $5}'
+dig $dns_server NS $domain | grep IN | grep -v ";" | sort -k 5n,5 | awk '{printf "%-40s %-40s %s\n", $1, $2" "$3" "$4, $5}'
 echo
 
 # TXT records
 echo "$(tput setaf 6)TXT RECORDS:$(tput sgr0)"
-printf "%-40s %-40s %s\n" "HOSTNAME" "TTL/CLASS/TYPE" "VALUE"
-printf "%-40s %-40s %s\n" "--------" "--------------" "-----"
-dig $dns_server TXT $domain | grep IN | grep -v ";" | grep -v NS | grep -v SOA | awk '{printf "%-40s $(tput setaf 4)%-40s$(tput sgr0) $(tput setaf 7)%s", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf " %s", $i; printf "$(tput sgr0)\n"}'
+dig $dns_server TXT $domain | grep IN | grep -v ";" | grep -v NS | grep -v SOA | awk '{printf "%-40s %-40s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
 echo
 
 # DMARC record
 echo "$(tput setaf 6)DMARC RECORD:$(tput sgr0)"
-printf "%-40s %-40s %s\n" "HOSTNAME" "TTL/CLASS/TYPE" "VALUE"
-printf "%-40s %-40s %s\n" "--------" "--------------" "-----"
-dig $dns_server TXT _dmarc.$domain | grep IN | grep \"v | awk '{printf "%-40s $(tput setaf 4)%-40s$(tput sgr0) $(tput setaf 7)%s", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf " %s", $i; printf "$(tput sgr0)\n"}'
+dig $dns_server TXT _dmarc.$domain | grep IN | grep \"v | awk '{printf "%-40s %-40s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
 echo
 
 # DKIM records (common selectors)
 echo "$(tput setaf 6)DKIM RECORDS:$(tput sgr0)"
-printf "%-40s %-40s %s\n" "HOSTNAME" "TTL/CLASS/TYPE" "VALUE"
-printf "%-40s %-40s %s\n" "--------" "--------------" "-----"
-dig $dns_server TXT bozmail._domainkey.$domain | grep IN | grep \"v | awk '{printf "%-40s $(tput setaf 4)%-40s$(tput sgr0) $(tput setaf 7)%s", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf " %s", $i; printf "$(tput sgr0)\n"}'
-dig $dns_server TXT boz._domainkey.$domain | grep IN | grep \"v | awk '{printf "%-40s $(tput setaf 4)%-40s$(tput sgr0) $(tput setaf 7)%s", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf " %s", $i; printf "$(tput sgr0)\n"}'
+dig $dns_server TXT bozmail._domainkey.$domain | grep IN | grep \"v | awk '{printf "%-40s %-40s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
+dig $dns_server TXT boz._domainkey.$domain | grep IN | grep \"v | awk '{printf "%-40s %-40s ", $1, $2" "$3" "$4; for(i=5;i<=NF;i++) printf "%s ", $i; printf "\n"}'
 echo
 
 # Registrar information
