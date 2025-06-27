@@ -54,8 +54,8 @@ echo
 
 # Get IP and organization info for root domain and www subdomain
 echo "HOST INFORMATION:"
-printf "%-10s %-25s %s\n" "HOST" "IP/CNAME" "ORGANIZATION"
-printf "%-10s %-25s %s\n" "----" "--------" "------------"
+printf "%-30s %-35s %s\n" "HOST" "IP/CNAME" "ORGANIZATION"
+printf "%-30s %-35s %s\n" "----" "--------" "------------"
 
 # Root domain
 NON_WWW_IP=`dig $dns_server +short $domain | head -n 1`
@@ -65,7 +65,7 @@ if [[ $NON_WWW_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     printf "%-30s %-35s %s\n" "$domain" "$NON_WWW_IP" "$NON_WWW_ORG"
 else
     # It's a CNAME or other record
-    printf "%-30s %-35s %s\n" "$domain" "$NON_WWW_IP" "(CNAME/redirect)"
+    printf "%-30s %-35s %s\n" "$domain" "$NON_WWW_IP" "(CNAME)"
 fi
 
 # WWW subdomain  
@@ -75,8 +75,28 @@ if [[ $WWW_RESULT =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     WWW_ORG=`echo $WWW_RESULT | xargs whois | grep 'OrgName\|org-name\|descr' | sort -r | head -n 1 | awk '{print $2,$3,$4,$5}'`
     printf "%-30s %-35s %s\n" "www.$domain" "$WWW_RESULT" "$WWW_ORG"
 else
-    # It's a CNAME or other record
-    printf "%-10s %-25s %s\n" "www.$domain" "$WWW_RESULT" "(CNAME/redirect)"
+    # It's a CNAME - show the CNAME and follow the chain
+    printf "%-30s %-35s %s\n" "www.$domain" "$WWW_RESULT" "(CNAME)"
+    
+    # Follow the CNAME chain until we get an IP address
+    current_host="$WWW_RESULT"
+    while [[ ! $current_host =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ -n "$current_host" ]]; do
+        next_result=`dig $dns_server +short $current_host | head -n 1`
+        if [[ $next_result =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            # Found the final IP address
+            FINAL_ORG=`echo $next_result | xargs whois | grep 'OrgName\|org-name\|descr' | sort -r | head -n 1 | awk '{print $2,$3,$4,$5}'`
+            printf "%-30s %-35s %s\n" "  -> $current_host" "$next_result" "$FINAL_ORG"
+            break
+        elif [[ -n "$next_result" ]] && [[ "$next_result" != "$current_host" ]]; then
+            # Another CNAME in the chain
+            printf "%-30s %-35s %s\n" "  -> $current_host" "$next_result" "(CNAME)"
+            current_host="$next_result"
+        else
+            # Dead end or loop detected
+            printf "%-30s %-35s %s\n" "  -> $current_host" "No A record found" "(Dead end)"
+            break
+        fi
+    done
 fi
 echo
 
