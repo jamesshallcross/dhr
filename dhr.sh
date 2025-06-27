@@ -5,9 +5,9 @@
 
 # Check if domain argument provided
 if [ $# -eq 0 ]; then
-    echo "Usage: $0 <domain>"
-    echo "Example: $0 example.com"
-    echo "Example: $0 https://www.example.com/path"
+    echo "Usage: $(basename $0) <domain>"
+    echo "Example: $(basename $0) example.com"
+    echo "Example: $(basename $0) https://www.example.com/path"
     exit 1
 fi
 
