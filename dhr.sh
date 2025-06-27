@@ -49,7 +49,7 @@ echo
 
 # Extract clean domain from various input formats
 domain=`echo $domain | awk -F "//" '{print $NF}' | awk -F "www." '{print $NF}' | awk -F "/" '{print $1}'`
-echo -e "Domain : $(tput setaf 1)$domain$(tput sgr0) - finding IP & Ownership..."
+echo -e "Domain : $(tput setaf 1)$domain$(tput sgr0)"
 echo
 
 # Get IP and organization info for root domain and www subdomain
