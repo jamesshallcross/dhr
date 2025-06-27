@@ -100,13 +100,17 @@ fi
 echo
 
 # HTTP/HTTPS redirect testing
-printf 'TIME (s)|REQUEST URL|CODE|REDIRECT URL\n' > /tmp/301.txt
-curl -sI http://$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
+echo "$(tput setaf 6)HTTP/HTTPS REDIRECT RESULTS:$(tput sgr0)"
+printf "%-15s %-40s %-10s %s\n" "TIME (s)" "REQUEST URL" "CODE" "REDIRECT URL"
+
+# Collect curl results in temp file
+curl -sI http://$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null > /tmp/301.txt
 curl -sI http://www.$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
 curl -sI https://$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
 curl -sI https://www.$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
-echo "$(tput setaf 6)HTTP/HTTPS REDIRECT RESULTS:$(tput sgr0)"
-cat /tmp/301.txt | column -t -s '|'
+
+# Format the results in 4 columns
+awk -F'|' '{printf "%-15s %-40s %-10s %s\n", $1, $2, $3, $4}' /tmp/301.txt
 echo
 rm /tmp/301.txt
 
