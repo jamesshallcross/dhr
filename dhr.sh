@@ -55,7 +55,6 @@ echo
 # Get IP and organization info for root domain and www subdomain
 echo "$(tput setaf 6)HOST INFORMATION:$(tput sgr0)"
 printf "%-40s %-40s %s\n" "HOST" "IP/CNAME" "ORGANIZATION"
-printf "%-40s %-40s %s\n" "----" "--------" "------------"
 
 # Root domain
 NON_WWW_IP=`dig $dns_server +short $domain | head -n 1`
@@ -100,6 +99,19 @@ else
 fi
 echo
 
+# HTTP/HTTPS redirect testing
+echo -e "$(tput setaf 6)Checking HTTP/HTTPS + root/www for redirects/errors...$(tput sgr0)"
+echo
+printf 'TIME (s)|REQUEST URL|CODE|REDIRECT URL\n' > /tmp/301.txt
+curl -sI http://$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
+curl -sI http://www.$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
+curl -sI https://$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
+curl -sI https://www.$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
+echo "$(tput setaf 6)HTTP/HTTPS REDIRECT RESULTS:$(tput sgr0)"
+cat /tmp/301.txt | column -t -s '|'
+echo
+rm /tmp/301.txt
+
 # A records for root domain
 echo "$(tput setaf 6)A RECORDS (root domain):$(tput sgr0)"
 dig $dns_server $domain | grep IN | grep -v ";" | grep -v NS | sort -k 5n,5 | awk '{printf "%-40s %-40s %s\n", $1, $2" "$3" "$4, $5}'
@@ -113,6 +125,7 @@ echo
 # MX records
 echo "$(tput setaf 6)MX RECORDS:$(tput sgr0)"
 dig $dns_server MX $domain | grep IN | grep -v ";" | grep MX | sort -k 5n,5 | awk '{printf "%-40s %-40s %s %s\n", $1, $2" "$3" "$4, $5, $6}'
+echo
 echo "$(tput setaf 6)MX SERVER IP ADDRESSES:$(tput sgr0)"
 dig $dns_server MX $domain | grep IN | grep -v ";" | grep -v NS | sort -k 5n,5 | cuts -1 | xargs dig $dns_server | grep IN | grep -v ";" | grep -v NS | grep -v SOA | awk '{printf "%-40s %-40s %s\n", $1, $2" "$3" "$4, $5}'
 echo
@@ -147,16 +160,3 @@ echo
 echo "$(tput setaf 6)DOMAIN EXPIRATION:$(tput sgr0)"
 whois $domain | grep Expir | grep -v "Registrar Registration Expiration Date:" | sed -e 's/^[ \t]*//'
 echo
-
-# HTTP/HTTPS redirect testing
-echo -e "$(tput setaf 6)Checking HTTP/HTTPS + root/www for redirects/errors...$(tput sgr0)"
-echo
-printf 'TIME (s)|REQUEST URL|CODE|REDIRECT URL\n' > /tmp/301.txt
-curl -sI http://$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
-curl -sI http://www.$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
-curl -sI https://$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
-curl -sI https://www.$domain -w '%{time_total}|%{url_effective}|%{response_code}|%{redirect_url}\n' -o /dev/null >> /tmp/301.txt
-echo "$(tput setaf 6)HTTP/HTTPS REDIRECT RESULTS:$(tput sgr0)"
-cat /tmp/301.txt | column -t -s '|'
-echo
-rm /tmp/301.txt
