@@ -84,7 +84,7 @@ else
         if [[ $next_result =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             # Found the final IP address
             FINAL_ORG=`echo $next_result | xargs whois | grep 'OrgName\|org-name\|descr' | sort -r | head -n 1 | awk '{print $2,$3,$4,$5}'`
-            printf "%-36s $(tput setaf 2)%-40s$(tput sgr0) $(tput setaf 5)%s$(tput sgr0)\n" "  -> $current_host" "$next_result" "$FINAL_ORG"
+            printf "%-36s $(tput setaf 2)%-36s$(tput sgr0) $(tput setaf 5)%s$(tput sgr0)\n" "  -> $current_host" "$next_result" "$FINAL_ORG"
             break
         elif [[ -n "$next_result" ]] && [[ "$next_result" != "$current_host" ]]; then
             # Another CNAME in the chain
