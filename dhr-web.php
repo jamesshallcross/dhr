@@ -306,6 +306,11 @@ class DomainHealthReporter {
             .info-item:last-child { flex: 0 0 auto; text-align: right; }
             .dark .info-item { color: #e0e0e0; }
             .light .info-item { color: #333; }
+            @media (max-width: 768px) {
+                .header-section { padding: 6px; }
+                .info-grid { flex-direction: column; gap: 5px; text-align: center; }
+                .info-item { white-space: normal; text-align: center !important; font-size: 12px; }
+            }
             .domain { font-weight: bold; }
             .dark .domain { color: #ff6b6b; }
             .light .domain { color: #e74c3c; }
@@ -313,6 +318,14 @@ class DomainHealthReporter {
             .dark .dns-server { color: #4ade80; }
             .light .dns-server { color: #27ae60; }
             .compact-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; transition: all 0.3s; }
+            @media (max-width: 768px) {
+                .compact-table { font-size: 11px; }
+                .compact-table th, .compact-table td { padding: 3px 4px; }
+                .compact-table .ip, .compact-table .cname, .compact-table .url, 
+                .compact-table .time, .compact-table .redirect-url { font-size: 10px; }
+                .compact-table .status-success, .compact-table .status-cname, 
+                .compact-table .status-redirect, .compact-table .status-error { font-size: 9px; }
+            }
             .dark .compact-table { background: #2d2d2d; }
             .light .compact-table { background: white; }
             .compact-table th, .compact-table td { padding: 4px 8px; text-align: left; transition: all 0.3s; }
@@ -383,6 +396,9 @@ class DomainHealthReporter {
             .dark h4 { color: #60a5fa; border-bottom: 1px solid #60a5fa; }
             .light h4 { color: #2c3e50; border-bottom: 1px solid #3498db; }
             h4:first-child { margin-top: 0; }
+            @media (max-width: 768px) {
+                h4 { font-size: 14px; margin: 10px 0 6px 0; }
+            }
         </style>
         ";
         
