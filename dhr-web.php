@@ -85,7 +85,7 @@ class DomainHealthReporter {
         
         // Desktop table
         echo "<table class='compact-table'>";
-        echo "<thead><tr><th>Host</th><th>IP/CNAME</th><th>Organization</th><th>Status</th></tr></thead>";
+        echo "<thead><tr><th>Host</th><th>IP/CNAME</th><th>Organization</th><th>DC</th><th>Status</th></tr></thead>";
         echo "<tbody>";
         
         $hostData = [];
@@ -656,6 +656,42 @@ class DomainHealthReporter {
         }
         
         return null;
+    }
+    
+    private function getDataCenter($host, $org) {
+        // Only check for data center if organization suggests Cloudflare/Shopify/WPEngine
+        if (!preg_match('/cloudflare|shopify|wpengine/i', $org)) {
+            return 'N/A';
+        }
+        
+        // Make HTTP request to get Cf-Ray header
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => "https://{$host}",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_NOBODY => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+        ]);
+        
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+        
+        if ($curlError || !$response) {
+            return 'N/A';
+        }
+        
+        // Look for Cf-Ray header
+        if (preg_match('/^cf-ray:\s*([a-f0-9]+)-([a-z]{3})/im', $response, $matches)) {
+            $dcCode = strtoupper($matches[2]);
+            return $dcCode;
+        }
+        
+        return 'N/A';
     }
     
     private function parseExpiryDate($whois) {
