@@ -250,7 +250,7 @@ class DomainHealthReporter {
                 if ($finalIp) {
                     $org = $this->getOrgInfo($finalIp);
                     $data[] = [
-                        '  └─ resolves to',
+                        "  └─ $record",
                         $finalIp,
                         $org,
                         'RESOLVED'
@@ -278,12 +278,16 @@ class DomainHealthReporter {
             } else if (!empty($line)) {
                 // Data line - apply colors based on content
                 $coloredLine = $line;
-                $coloredLine = preg_replace('/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/', $this->colorize('$0', 'green'), $coloredLine);
-                $coloredLine = preg_replace('/\bWPEngine[^|]*/', $this->colorize('$0', 'magenta'), $coloredLine);
+                // Apply status colors first (most specific)
                 $coloredLine = preg_replace('/\bRESOLVED\b/', $this->colorize('✓ RESOLVED', 'green'), $coloredLine);
                 $coloredLine = preg_replace('/\bCNAME\b/', $this->colorize('↳ CNAME', 'yellow'), $coloredLine);
                 $coloredLine = preg_replace('/\bNO_RECORD\b/', $this->colorize('❌ NO_RECORD', 'red'), $coloredLine);
-                $coloredLine = preg_replace('/\b[a-zA-Z0-9.-]+\.com\.?\b/', $this->colorize('$0', 'yellow'), $coloredLine);
+                // Apply IP addresses
+                $coloredLine = preg_replace('/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/', $this->colorize('$0', 'green'), $coloredLine);
+                // Apply organization names
+                $coloredLine = preg_replace('/\bWPEngine[^|]*/', $this->colorize('$0', 'magenta'), $coloredLine);
+                // Apply CNAME hostnames (but not if already colored)
+                $coloredLine = preg_replace('/(?<!\033\[)\b[a-zA-Z0-9.-]+\.(?:com|net|org|co\.uk)\.?\b(?!\033)/', $this->colorize('$0', 'yellow'), $coloredLine);
                 echo $coloredLine . "\n";
             }
         }
