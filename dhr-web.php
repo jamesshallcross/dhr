@@ -31,11 +31,7 @@ class DomainHealthReporter {
     }
     
     private function getSystemDns() {
-        $output = shell_exec('dig | grep SERVER 2>/dev/null');
-        if ($output && preg_match('/SERVER: ([^#]+)/', $output, $matches)) {
-            return trim($matches[1]);
-        }
-        return '8.8.8.8#53';
+        return '1.1.1.1#53';
     }
     
     private function printSectionHeader($title) {
