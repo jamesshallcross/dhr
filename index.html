@@ -176,6 +176,29 @@
             -webkit-text-fill-color: #333 !important;
             border-color: #ddd !important;
         }
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: all 0.3s;
+        }
+        .dark select {
+            border-color: #555;
+            background-color: #3d3d3d;
+            color: #e0e0e0;
+        }
+        .light select {
+            border-color: #ddd;
+            background-color: white;
+            color: #333;
+        }
+        select:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
         input[type="text"]:focus {
             border-color: #4CAF50;
             outline: none;
@@ -286,8 +309,14 @@
                 </div>
                 
                 <div class="form-group narrow">
-                    <label for="dnsServer">DNS Server (optional):</label>
-                    <input type="text" id="dnsServer" name="dnsServer" placeholder="1.1.1.1" value="1.1.1.1">
+                    <label for="dnsSelect">DNS Server (optional):</label>
+                    <select id="dnsSelect" name="dnsSelect">
+                        <option value="1.1.1.1" selected>Cloudflare (1.1.1.1)</option>
+                        <option value="8.8.8.8">Google DNS (8.8.8.8)</option>
+                        <option value="208.67.222.222">OpenDNS (208.67.222.222)</option>
+                        <option value="other">Other...</option>
+                    </select>
+                    <input type="text" id="dnsCustom" name="dnsCustom" placeholder="Enter custom DNS IP" style="display: none; margin-top: 5px;">
                 </div>
                 
                 <div class="form-group button">
@@ -324,12 +353,23 @@
             }
         });
         
+        // DNS server dropdown functionality
+        document.getElementById('dnsSelect').addEventListener('change', function() {
+            const customInput = document.getElementById('dnsCustom');
+            if (this.value === 'other') {
+                customInput.style.display = 'block';
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+                customInput.value = '';
+            }
+        });
+        
         // Handle form submission
         document.getElementById('domainForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const domain = document.getElementById('domain').value.trim();
-            const dnsServer = document.getElementById('dnsServer').value.trim();
             
             if (!domain) {
                 alert('Please enter a domain name');
@@ -340,11 +380,16 @@
             document.getElementById('loading').style.display = 'block';
             document.getElementById('results').style.display = 'none';
             
+            // Get DNS server value
+            const dnsSelect = document.getElementById('dnsSelect').value;
+            const dnsCustom = document.getElementById('dnsCustom').value.trim();
+            const finalDnsServer = dnsSelect === 'other' ? dnsCustom : dnsSelect;
+            
             // Prepare form data
             const formData = new FormData();
             formData.append('domain', domain);
-            if (dnsServer) {
-                formData.append('dns_server', dnsServer);
+            if (finalDnsServer) {
+                formData.append('dns_server', finalDnsServer);
             }
             
             // Submit to PHP backend
