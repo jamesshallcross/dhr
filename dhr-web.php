@@ -19,7 +19,7 @@ class DomainHealthReporter {
     
     private function printHeader() {
         $dnsInfo = $this->dnsServer ? $this->dnsServer : $this->getSystemDns();
-        $timestamp = date('Y.m.d H:i');
+        $timestamp = date('Y.m.d H:i T');
         
         echo "<div class='header-section'>";
         echo "<div class='info-grid'>";
