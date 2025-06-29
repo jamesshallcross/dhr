@@ -271,15 +271,51 @@ class DomainHealthReporter {
                 continue;
             }
             
-            foreach ($records as $record) {
-                if ($type === 'MX') {
+            if ($type === 'MX') {
+                printf("%-15s %s\n", 
+                    $this->colorize('PRIORITY', 'white', true),
+                    $this->colorize('MAIL SERVER', 'white', true)
+                );
+                echo str_repeat('─', 60) . "\n";
+                foreach ($records as $record) {
                     $parts = explode(' ', $record, 2);
                     $priority = $parts[0] ?? '';
                     $server = $parts[1] ?? $record;
-                    echo $this->colorize("Priority: $priority", 'yellow') . " → " . 
-                         $this->colorize($server, 'green') . "\n";
-                } else {
-                    echo $this->colorize($record, 'green') . "\n";
+                    printf("%-15s %s\n",
+                        $this->colorize($priority, 'yellow'),
+                        $this->colorize($server, 'green')
+                    );
+                }
+            } elseif ($type === 'TXT') {
+                printf("%-50s %s\n", 
+                    $this->colorize('RECORD TYPE', 'white', true),
+                    $this->colorize('VALUE', 'white', true)
+                );
+                echo str_repeat('─', 100) . "\n";
+                foreach ($records as $record) {
+                    $recordType = 'TXT';
+                    if (strpos($record, 'v=spf1') !== false) $recordType = 'SPF';
+                    elseif (strpos($record, 'v=DMARC1') !== false) $recordType = 'DMARC';
+                    elseif (strpos($record, 'google-site-verification') !== false) $recordType = 'Google Verify';
+                    elseif (strpos($record, '_globalsign-domain-verification') !== false) $recordType = 'GlobalSign';
+                    elseif (strpos($record, 'mandrill_verify') !== false) $recordType = 'Mandrill';
+                    
+                    printf("%-50s %s\n",
+                        $this->colorize($recordType, 'cyan'),
+                        $this->colorize($record, 'green')
+                    );
+                }
+            } else {
+                printf("%-40s %s\n", 
+                    $this->colorize('RECORD', 'white', true),
+                    $this->colorize('STATUS', 'white', true)
+                );
+                echo str_repeat('─', 60) . "\n";
+                foreach ($records as $record) {
+                    printf("%-40s %s\n",
+                        $this->colorize($record, 'green'),
+                        $this->colorize('✓ Active', 'green')
+                    );
                 }
             }
             echo "\n";
@@ -304,7 +340,8 @@ class DomainHealthReporter {
         if (empty($spf)) {
             echo $this->colorize("❌ No SPF record found - Email spoofing vulnerable", 'red') . "\n";
         } else {
-            echo $this->colorize("✓ SPF configured:", 'green') . " " . $spf[0] . "\n";
+            $spfRecord = array_values($spf)[0];
+            echo $this->colorize("✓ SPF configured:", 'green') . " " . $spfRecord . "\n";
         }
         echo "\n";
     }
