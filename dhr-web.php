@@ -591,6 +591,62 @@ class DomainHealthReporter {
         }
     }
     
+    private function detectEmailProvider($mxRecords) {
+        if (empty($mxRecords)) {
+            return null;
+        }
+        
+        // Check for Google Workspace pattern
+        $googleMxPattern = [
+            'aspmx.l.google.com.',
+            'alt1.aspmx.l.google.com.',
+            'alt2.aspmx.l.google.com.',
+            'alt3.aspmx.l.google.com.',
+            'alt4.aspmx.l.google.com.'
+        ];
+        
+        $foundGoogleMx = [];
+        foreach ($mxRecords as $record) {
+            // Extract hostname from "priority hostname" format
+            $parts = explode(' ', trim($record), 2);
+            if (count($parts) >= 2) {
+                $hostname = trim($parts[1]);
+                if (in_array($hostname, $googleMxPattern)) {
+                    $foundGoogleMx[] = $hostname;
+                }
+            }
+        }
+        
+        // If we found multiple Google MX records, it's likely Google Workspace
+        if (count($foundGoogleMx) >= 3) {
+            return "Email by <span class='email-provider-name'>Google Workspace</span>";
+        }
+        
+        // Check for Microsoft 365 pattern
+        foreach ($mxRecords as $record) {
+            $parts = explode(' ', trim($record), 2);
+            if (count($parts) >= 2) {
+                $hostname = trim($parts[1]);
+                if (preg_match('/\.mail\.protection\.outlook\.com\.?$/', $hostname)) {
+                    return "Email by <span class='email-provider-name'>Microsoft 365</span>";
+                }
+            }
+        }
+        
+        // Check for Stackmail/20i pattern
+        foreach ($mxRecords as $record) {
+            $parts = explode(' ', trim($record), 2);
+            if (count($parts) >= 2) {
+                $hostname = trim($parts[1]);
+                if ($hostname === 'mx.stackmail.com.' || $hostname === 'mx.stackmail.com') {
+                    return "Email by <span class='email-provider-name'>Stackmail/20i</span>";
+                }
+            }
+        }
+        
+        return null;
+    }
+    
     public function analyze() {
         echo "
         <style>
