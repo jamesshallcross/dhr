@@ -692,6 +692,7 @@ class DomainHealthReporter {
         $this->printHeader();
         $this->analyzeHostInfo();
         $this->analyzeRedirects();
+        $this->analyzeSSLCertificate();
         $this->analyzeDnsRecords();
         $this->analyzeEmailSecurity();
         $this->analyzeDomainInfo();
