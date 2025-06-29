@@ -234,8 +234,9 @@ class DomainHealthReporter {
             
             // Make URL bold if code is 200
             $urlClass = ($result['code'] == 200) ? 'url url-bold' : 'url';
+            $rowClass = ($result['code'] == 200) ? 'final-destination' : '';
             
-            echo "<tr>";
+            echo "<tr class='{$rowClass}'>";
             echo "<td><span class='{$urlClass}'>{$url}</span></td>";
             echo "<td><span class='{$codeClass}'>{$result['code']}</span></td>";
             echo "<td><span class='redirect-url'>{$result['final_url']}</span></td>";
@@ -254,8 +255,9 @@ class DomainHealthReporter {
         
         // Mobile cards
         echo "<div class='redirect-info-mobile'>";
-        foreach ($redirectData as $data) {
-            echo "<div class='redirect-card'>";
+        foreach ($redirectData as $i => $data) {
+            $cardClass = (strpos($data['code'], '200') !== false) ? 'redirect-card final-destination-card' : 'redirect-card';
+            echo "<div class='{$cardClass}'>";
             echo "<div class='redirect-url-header'>{$data['url']}</div>";
             echo "<div class='redirect-detail'><strong>Code:</strong> {$data['code']}</div>";
             if (!empty($data['redirect']) && strip_tags($data['redirect']) !== '') {
