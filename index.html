@@ -21,58 +21,59 @@
         h1 {
             color: #333;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+            font-size: 24px;
         }
         .subtitle {
             text-align: center;
             color: #666;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             font-style: italic;
+            font-size: 14px;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 15px;
         }
         .form-group {
-            margin-bottom: 20px;
+            flex: 1;
+        }
+        .form-group.narrow {
+            flex: 0 0 200px;
+        }
+        .form-group.button {
+            flex: 0 0 auto;
         }
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             font-weight: bold;
             color: #333;
+            font-size: 13px;
         }
         input[type="text"] {
             width: 100%;
-            padding: 12px;
+            padding: 8px 12px;
             border: 2px solid #ddd;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: 14px;
             box-sizing: border-box;
         }
         input[type="text"]:focus {
             border-color: #4CAF50;
             outline: none;
         }
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        input[type="checkbox"] {
-            margin-right: 10px;
-            transform: scale(1.2);
-        }
-        .dns-input {
-            margin-top: 10px;
-            display: none;
-        }
         button {
             background-color: #4CAF50;
             color: white;
-            padding: 12px 30px;
+            padding: 8px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-            margin-top: 10px;
+            font-size: 14px;
+            white-space: nowrap;
         }
         button:hover {
             background-color: #45a049;
@@ -109,24 +110,22 @@
         <p class="subtitle">Advanced domain analysis tool - check DNS records, hosting, SSL and redirects</p>
         
         <form id="domainForm">
-            <div class="form-group">
-                <label for="domain">Domain to analyze:</label>
-                <input type="text" id="domain" name="domain" placeholder="example.com" required>
-                <div class="example">Examples: example.com, https://www.example.com/path</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="customDns" name="customDns">
-                    <label for="customDns">Use custom DNS server</label>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="domain">Domain to analyze:</label>
+                    <input type="text" id="domain" name="domain" placeholder="example.com" required>
                 </div>
-                <div class="dns-input" id="dnsInput">
+                
+                <div class="form-group narrow">
+                    <label for="dnsServer">DNS Server (optional):</label>
                     <input type="text" id="dnsServer" name="dnsServer" placeholder="8.8.8.8">
-                    <div class="example">Examples: 8.8.8.8, 1.1.1.1, 208.67.222.222</div>
+                </div>
+                
+                <div class="form-group button">
+                    <button type="submit">Analyze Domain</button>
                 </div>
             </div>
-            
-            <button type="submit">Analyze Domain</button>
+            <div class="example">Examples: example.com, https://www.example.com/path | DNS: 8.8.8.8, 1.1.1.1, 208.67.222.222</div>
         </form>
         
         <div class="loading" id="loading">
@@ -137,21 +136,11 @@
     </div>
 
     <script>
-        // Toggle DNS server input
-        document.getElementById('customDns').addEventListener('change', function() {
-            const dnsInput = document.getElementById('dnsInput');
-            dnsInput.style.display = this.checked ? 'block' : 'none';
-            if (!this.checked) {
-                document.getElementById('dnsServer').value = '';
-            }
-        });
-
         // Handle form submission
         document.getElementById('domainForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const domain = document.getElementById('domain').value.trim();
-            const customDns = document.getElementById('customDns').checked;
             const dnsServer = document.getElementById('dnsServer').value.trim();
             
             if (!domain) {
@@ -166,7 +155,7 @@
             // Prepare form data
             const formData = new FormData();
             formData.append('domain', domain);
-            if (customDns && dnsServer) {
+            if (dnsServer) {
                 formData.append('dns_server', dnsServer);
             }
             
