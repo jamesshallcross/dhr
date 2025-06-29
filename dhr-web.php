@@ -19,7 +19,7 @@ class DomainHealthReporter {
     
     private function printHeader() {
         $dnsInfo = $this->dnsServer ? $this->dnsServer : $this->getSystemDns();
-        $timestamp = date('Y-m-d H:i:s T');
+        $timestamp = date('Y.m.d H:i');
         
         echo "<div class='header-section'>";
         echo "<div class='info-grid'>";
@@ -89,9 +89,9 @@ class DomainHealthReporter {
             if (empty($records)) {
                 echo "<tr>";
                 echo "<td>{$host}</td>";
-                echo "<td class='no-record'>No A record</td>";
+                echo "<td><span class='no-record'>No A record</span></td>";
                 echo "<td>N/A</td>";
-                echo "<td class='status-error'>NO_RECORD</td>";
+                echo "<td><span class='status-error'>NO_RECORD</span></td>";
                 echo "</tr>";
                 continue;
             }
@@ -102,17 +102,17 @@ class DomainHealthReporter {
                 $org = $this->getOrgInfo($record);
                 echo "<tr>";
                 echo "<td>{$host}</td>";
-                echo "<td class='ip'>{$record}</td>";
-                echo "<td class='org'>{$org}</td>";
-                echo "<td class='status-success'>RESOLVED</td>";
+                echo "<td><span class='ip'>{$record}</span></td>";
+                echo "<td><span class='org'>{$org}</span></td>";
+                echo "<td><span class='status-success'>RESOLVED</span></td>";
                 echo "</tr>";
             } else {
                 // CNAME record
                 echo "<tr>";
                 echo "<td>{$host}</td>";
-                echo "<td class='cname'>{$record}</td>";
+                echo "<td><span class='cname'>{$record}</span></td>";
                 echo "<td></td>";
-                echo "<td class='status-cname'>CNAME</td>";
+                echo "<td><span class='status-cname'>CNAME</span></td>";
                 echo "</tr>";
                 
                 // Resolve CNAME to final IP
@@ -121,9 +121,9 @@ class DomainHealthReporter {
                     $org = $this->getOrgInfo($finalIp);
                     echo "<tr class='cname-resolution'>";
                     echo "<td>&nbsp;&nbsp;└─ {$record}</td>";
-                    echo "<td class='ip'>{$finalIp}</td>";
-                    echo "<td class='org'>{$org}</td>";
-                    echo "<td class='status-success'>RESOLVED</td>";
+                    echo "<td><span class='ip'>{$finalIp}</span></td>";
+                    echo "<td><span class='org'>{$org}</span></td>";
+                    echo "<td><span class='status-success'>RESOLVED</span></td>";
                     echo "</tr>";
                 }
             }
@@ -168,10 +168,10 @@ class DomainHealthReporter {
             else $codeClass = 'status-error';
             
             echo "<tr>";
-            echo "<td class='url'>{$url}</td>";
-            echo "<td class='{$codeClass}'>{$result['code']}</td>";
-            echo "<td class='time'>" . number_format($result['time'], 2) . "s</td>";
-            echo "<td class='redirect-url'>{$result['final_url']}</td>";
+            echo "<td><span class='url'>{$url}</span></td>";
+            echo "<td><span class='{$codeClass}'>{$result['code']}</span></td>";
+            echo "<td><span class='time'>" . number_format($result['time'], 2) . "s</span></td>";
+            echo "<td><span class='redirect-url'>{$result['final_url']}</span></td>";
             echo "</tr>";
         }
         
@@ -255,7 +255,7 @@ class DomainHealthReporter {
         } else {
             echo "<ul class='dns-list'>";
             foreach ($records as $record) {
-                echo "<li class='server'>{$record}</li>";
+                echo "<li><span class='server'>{$record}</span></li>";
             }
             echo "</ul>";
         }
