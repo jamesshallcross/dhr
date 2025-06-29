@@ -304,13 +304,8 @@ class DomainHealthReporter {
     private function analyzeRedirects() {
         $this->printSectionHeader('HTTP/HTTPS REDIRECT RESULTS');
         
-        printf("%-35s %-8s %-8s %s\n",
-            $this->colorize('REQUEST URL', 'white', true),
-            $this->colorize('CODE', 'white', true),
-            $this->colorize('TIME', 'white', true),
-            $this->colorize('REDIRECT URL', 'white', true)
-        );
-        
+        // Collect redirect data
+        $data = [];
         $urls = [
             "http://{$this->domain}",
             "http://www.{$this->domain}",
@@ -320,24 +315,42 @@ class DomainHealthReporter {
         
         foreach ($urls as $url) {
             $result = $this->testRedirect($url);
-            
-            $statusColor = 'red';
-            $statusText = '❌ FAIL';
-            
-            if ($result['code'] >= 200 && $result['code'] < 300) {
-                $statusColor = 'green';
-                $statusText = '✓ OK';
-            } elseif ($result['code'] >= 300 && $result['code'] < 400) {
-                $statusColor = 'yellow';
-                $statusText = '↳ REDIRECT';
-            }
-            
-            printf("%-35s %-8s %-8s %s\n",
+            $data[] = [
                 $url,
-                $this->colorize($result['code'], $result['code'] < 400 ? 'green' : 'red'),
-                $this->colorize(number_format($result['time'], 2) . 's', 'blue'),
-                $this->colorize($result['final_url'], 'cyan')
-            );
+                $result['code'],
+                number_format($result['time'], 2) . 's',
+                $result['final_url']
+            ];
+        }
+        
+        // Create pipe-delimited data
+        $output = "REQUEST URL|CODE|TIME|REDIRECT URL\n";
+        foreach ($data as $row) {
+            $output .= implode('|', $row) . "\n";
+        }
+        
+        // Use column command for perfect alignment
+        $formatted = shell_exec("echo " . escapeshellarg($output) . " | column -t -s '|'");
+        
+        // Apply colors to the formatted output
+        $lines = explode("\n", trim($formatted));
+        foreach ($lines as $i => $line) {
+            if ($i === 0) {
+                // Header line
+                echo $this->colorize($line, 'white', true) . "\n";
+            } else if (!empty($line)) {
+                // Data line - apply colors
+                $coloredLine = $line;
+                // Color HTTP codes
+                $coloredLine = preg_replace('/\b([2]\d{2})\b/', $this->colorize('$1', 'green'), $coloredLine);
+                $coloredLine = preg_replace('/\b([3]\d{2})\b/', $this->colorize('$1', 'yellow'), $coloredLine);
+                $coloredLine = preg_replace('/\b([4-5]\d{2})\b/', $this->colorize('$1', 'red'), $coloredLine);
+                // Color timing
+                $coloredLine = preg_replace('/\b\d+\.\d+s\b/', $this->colorize('$0', 'blue'), $coloredLine);
+                // Color URLs
+                $coloredLine = preg_replace('/https?:\/\/[^\s]+/', $this->colorize('$0', 'cyan'), $coloredLine);
+                echo $coloredLine . "\n";
+            }
         }
         echo "\n";
     }
