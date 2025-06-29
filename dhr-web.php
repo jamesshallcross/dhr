@@ -83,9 +83,12 @@ class DomainHealthReporter {
             "www.{$this->domain}"
         ];
         
+        // Desktop table
         echo "<table class='compact-table'>";
         echo "<thead><tr><th>Host</th><th>IP/CNAME</th><th>Organization</th><th>Status</th></tr></thead>";
         echo "<tbody>";
+        
+        $hostData = [];
         
         foreach ($hosts as $host) {
             $records = $this->dnsLookup($host, 'A', $this->dnsServer);
@@ -97,6 +100,13 @@ class DomainHealthReporter {
                 echo "<td>N/A</td>";
                 echo "<td><span class='status-error'>NO_RECORD</span></td>";
                 echo "</tr>";
+                
+                $hostData[] = [
+                    'host' => $host,
+                    'ip_cname' => "<span class='no-record'>No A record</span>",
+                    'org' => 'N/A',
+                    'status' => "<span class='status-error'>NO_RECORD</span>"
+                ];
                 continue;
             }
             
@@ -110,6 +120,13 @@ class DomainHealthReporter {
                 echo "<td><span class='org'>{$org}</span></td>";
                 echo "<td><span class='status-success'>RESOLVED</span></td>";
                 echo "</tr>";
+                
+                $hostData[] = [
+                    'host' => $host,
+                    'ip_cname' => "<span class='ip'>{$record}</span>",
+                    'org' => "<span class='org'>{$org}</span>",
+                    'status' => "<span class='status-success'>RESOLVED</span>"
+                ];
             } else {
                 // CNAME record
                 echo "<tr>";
@@ -118,6 +135,13 @@ class DomainHealthReporter {
                 echo "<td></td>";
                 echo "<td><span class='status-cname'>CNAME</span></td>";
                 echo "</tr>";
+                
+                $hostData[] = [
+                    'host' => $host,
+                    'ip_cname' => "<span class='cname'>{$record}</span>",
+                    'org' => '',
+                    'status' => "<span class='status-cname'>CNAME</span>"
+                ];
                 
                 // Resolve CNAME to final IP
                 $finalIp = $this->resolveCnameChain($record);
@@ -129,11 +153,32 @@ class DomainHealthReporter {
                     echo "<td><span class='org'>{$org}</span></td>";
                     echo "<td><span class='status-success'>RESOLVED</span></td>";
                     echo "</tr>";
+                    
+                    $hostData[] = [
+                        'host' => "&nbsp;&nbsp;└─ {$record}",
+                        'ip_cname' => "<span class='ip'>{$finalIp}</span>",
+                        'org' => "<span class='org'>{$org}</span>",
+                        'status' => "<span class='status-success'>RESOLVED</span>"
+                    ];
                 }
             }
         }
         
         echo "</tbody></table>";
+        
+        // Mobile cards
+        echo "<div class='host-info-mobile'>";
+        foreach ($hostData as $data) {
+            echo "<div class='host-card'>";
+            echo "<div class='host-name'>{$data['host']}</div>";
+            echo "<div class='host-detail'><strong>IP/CNAME:</strong> {$data['ip_cname']}</div>";
+            if (!empty($data['org'])) {
+                echo "<div class='host-detail'><strong>Org:</strong> {$data['org']}</div>";
+            }
+            echo "<div class='host-detail'><strong>Status:</strong> {$data['status']}</div>";
+            echo "</div>";
+        }
+        echo "</div>";
     }
     
     private function resolveCnameChain($hostname, $depth = 0) {
@@ -325,6 +370,20 @@ class DomainHealthReporter {
                 .compact-table .time, .compact-table .redirect-url { font-size: 10px; }
                 .compact-table .status-success, .compact-table .status-cname, 
                 .compact-table .status-redirect, .compact-table .status-error { font-size: 9px; }
+                
+                /* Mobile card layout for Host Information */
+                .host-info-mobile { display: block; }
+                .host-info-mobile .compact-table { display: none; }
+                .compact-table { display: none; }
+                .host-card { border-radius: 5px; margin: 8px 0; padding: 10px; transition: background-color 0.3s; }
+                .dark .host-card { background: #3d3d3d; border: 1px solid #555; }
+                .light .host-card { background: #f9f9f9; border: 1px solid #ddd; }
+                .host-card .host-name { font-weight: bold; font-size: 13px; margin-bottom: 5px; }
+                .host-card .host-detail { font-size: 11px; margin: 3px 0; }
+                .host-card .host-detail strong { min-width: 60px; display: inline-block; }
+            }
+            @media (min-width: 769px) {
+                .host-info-mobile { display: none; }
             }
             .dark .compact-table { background: #2d2d2d; }
             .light .compact-table { background: white; }
