@@ -122,7 +122,29 @@ class DomainHealthReporter {
     
     private function printHeader() {
         echo "\n";
-        echo "Domain : " . $this->colorize($this->domain, 'red') . "\n";
+        
+        $dnsInfo = $this->dnsServer ? $this->dnsServer : $this->getSystemDns();
+        $timestamp = date('Y-m-d H:i:s T');
+        
+        // Create pipe-delimited data for DNS info
+        $output = "ANALYSIS TARGET|DNS SERVER|TIMESTAMP\n";
+        $output .= "{$this->domain}|{$dnsInfo}|{$timestamp}\n";
+        
+        // Use column command for perfect alignment
+        $formatted = shell_exec("echo " . escapeshellarg($output) . " | column -t -s '|'");
+        
+        // Apply colors to the formatted output
+        $lines = explode("\n", trim($formatted));
+        foreach ($lines as $i => $line) {
+            if ($i === 0) {
+                // Header line
+                echo $this->colorize($line, 'blue', true) . "\n";
+            } else if (!empty($line)) {
+                // Data line - color the domain
+                $coloredLine = preg_replace('/\b' . preg_quote($this->domain, '/') . '\b/', $this->colorize($this->domain, 'red'), $line);
+                echo $coloredLine . "\n";
+            }
+        }
         echo "\n";
     }
     
