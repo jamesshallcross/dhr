@@ -186,7 +186,7 @@ class DomainHealthReporter {
             CURLOPT_HEADER => true,
             CURLOPT_NOBODY => true,
             CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_TIMEOUT => 10,
+            CURLOPT_TIMEOUT => 3,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_USERAGENT => 'Domain Health Reporter/2.0'
         ]);
@@ -196,7 +196,17 @@ class DomainHealthReporter {
         $time = microtime(true) - $start;
         
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
+        
+        // Handle timeout specifically
+        if ($curlError && strpos($curlError, 'timeout') !== false) {
+            return [
+                'code' => 0,
+                'time' => $time,
+                'final_url' => 'Timeout'
+            ];
+        }
         
         $redirectUrl = '';
         if ($code >= 300 && $code < 400 && $response) {
@@ -210,7 +220,7 @@ class DomainHealthReporter {
         } elseif ($code >= 200 && $code < 300) {
             $redirectUrl = '';
         } else {
-            $redirectUrl = 'Error';
+            $redirectUrl = $code > 0 ? 'Error' : 'Timeout';
         }
         
         return [
@@ -282,34 +292,34 @@ class DomainHealthReporter {
     public function analyze() {
         echo "
         <style>
-            .header-section { margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 3px; }
+            .header-section { margin-bottom: 10px; padding: 8px; background: #3d3d3d; border-radius: 3px; }
             .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-            .info-item { font-size: 13px; }
-            .domain { color: #e74c3c; font-weight: bold; }
-            .compact-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
-            .compact-table th, .compact-table td { padding: 4px 8px; text-align: left; border-bottom: 1px solid #ddd; }
-            .compact-table th { background-color: #f5f5f5; font-weight: bold; font-size: 12px; }
-            .compact-table tr:hover { background-color: #f9f9f9; }
-            .ip { color: #27ae60; font-family: monospace; font-size: 12px; }
-            .cname { color: #f39c12; font-family: monospace; font-size: 12px; }
-            .org { color: #8e44ad; font-size: 12px; }
-            .url { color: #3498db; font-family: monospace; font-size: 12px; }
-            .time { color: #3498db; font-family: monospace; font-size: 12px; }
-            .redirect-url { color: #3498db; font-family: monospace; font-size: 12px; }
-            .status-success { color: #27ae60; font-weight: bold; font-size: 11px; }
-            .status-cname { color: #f39c12; font-weight: bold; font-size: 11px; }
-            .status-redirect { color: #f39c12; font-weight: bold; font-size: 11px; }
-            .status-error { color: #e74c3c; font-weight: bold; font-size: 11px; }
-            .no-record { color: #e74c3c; font-style: italic; font-size: 12px; }
-            .cname-resolution { background-color: #f9f9f9; }
+            .info-item { font-size: 13px; color: #e0e0e0; }
+            .domain { color: #ff6b6b; font-weight: bold; }
+            .compact-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; background: #2d2d2d; }
+            .compact-table th, .compact-table td { padding: 4px 8px; text-align: left; border-bottom: 1px solid #555; color: #e0e0e0; }
+            .compact-table th { background-color: #3d3d3d; font-weight: bold; font-size: 12px; }
+            .compact-table tr:hover { background-color: #3d3d3d; }
+            .ip { color: #4ade80; font-family: monospace; font-size: 12px; }
+            .cname { color: #fbbf24; font-family: monospace; font-size: 12px; }
+            .org { color: #a78bfa; font-size: 12px; }
+            .url { color: #60a5fa; font-family: monospace; font-size: 12px; }
+            .time { color: #60a5fa; font-family: monospace; font-size: 12px; }
+            .redirect-url { color: #60a5fa; font-family: monospace; font-size: 12px; }
+            .status-success { color: #4ade80; font-weight: bold; font-size: 11px; }
+            .status-cname { color: #fbbf24; font-weight: bold; font-size: 11px; }
+            .status-redirect { color: #fbbf24; font-weight: bold; font-size: 11px; }
+            .status-error { color: #f87171; font-weight: bold; font-size: 11px; }
+            .no-record { color: #f87171; font-style: italic; font-size: 12px; }
+            .cname-resolution { background-color: #3d3d3d; }
             .dns-list { list-style: none; padding: 0; margin: 5px 0; }
-            .dns-list li { padding: 2px 0; border-bottom: 1px solid #eee; font-size: 13px; }
-            .priority { color: #f39c12; font-weight: bold; }
-            .server { color: #27ae60; font-family: monospace; font-size: 12px; }
-            .dmarc-record { background: #f8f9fa; padding: 8px; border-radius: 3px; font-family: monospace; word-break: break-all; font-size: 12px; }
-            .registrar, .expiry { color: #27ae60; font-weight: bold; font-size: 13px; }
-            .no-records { color: #666; font-style: italic; font-size: 12px; margin: 5px 0; }
-            h4 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 2px; margin: 15px 0 8px 0; font-size: 16px; }
+            .dns-list li { padding: 2px 0; border-bottom: 1px solid #555; font-size: 13px; color: #e0e0e0; }
+            .priority { color: #fbbf24; font-weight: bold; }
+            .server { color: #4ade80; font-family: monospace; font-size: 12px; }
+            .dmarc-record { background: #3d3d3d; padding: 8px; border-radius: 3px; font-family: monospace; word-break: break-all; font-size: 12px; color: #e0e0e0; }
+            .registrar, .expiry { color: #4ade80; font-weight: bold; font-size: 13px; }
+            .no-records { color: #9ca3af; font-style: italic; font-size: 12px; margin: 5px 0; }
+            h4 { color: #60a5fa; border-bottom: 1px solid #60a5fa; padding-bottom: 2px; margin: 15px 0 8px 0; font-size: 16px; }
             h4:first-child { margin-top: 0; }
         </style>
         ";
