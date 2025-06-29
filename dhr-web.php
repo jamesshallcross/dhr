@@ -320,6 +320,8 @@ class DomainHealthReporter {
         
         foreach ($hosts as $host) {
             $sslInfo = $this->getSSLInfo($host);
+            $hstsInfo = $this->getHSTSInfo($host);
+            $sslInfo = array_merge($sslInfo, $hstsInfo);
             
             echo "<tr>";
             echo "<td>{$host}</td>";
