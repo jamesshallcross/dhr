@@ -314,39 +314,39 @@ class DomainHealthReporter {
             .compact-table tr:hover { transition: background-color 0.2s; }
             .dark .compact-table tr:hover { background-color: #3d3d3d; }
             .light .compact-table tr:hover { background-color: #f9f9f9; }
-            .ip { font-family: monospace; font-size: 12px; }
-            .dark .ip { color: #4ade80; }
-            .light .ip { color: #27ae60; }
-            .cname { font-family: monospace; font-size: 12px; }
-            .dark .cname { color: #fbbf24; }
-            .light .cname { color: #f39c12; }
-            .org { font-size: 12px; }
-            .dark .org { color: #a78bfa; }
-            .light .org { color: #8e44ad; }
-            .url { font-family: monospace; font-size: 12px; }
-            .dark .url { color: #60a5fa; }
-            .light .url { color: #3498db; }
-            .time { font-family: monospace; font-size: 12px; }
-            .dark .time { color: #60a5fa; }
-            .light .time { color: #3498db; }
-            .redirect-url { font-family: monospace; font-size: 12px; }
-            .dark .redirect-url { color: #60a5fa; }
-            .light .redirect-url { color: #3498db; }
-            .status-success { font-weight: bold; font-size: 11px; }
-            .dark .status-success { color: #4ade80; }
-            .light .status-success { color: #27ae60; }
-            .status-cname { font-weight: bold; font-size: 11px; }
-            .dark .status-cname { color: #fbbf24; }
-            .light .status-cname { color: #f39c12; }
-            .status-redirect { font-weight: bold; font-size: 11px; }
-            .dark .status-redirect { color: #fbbf24; }
-            .light .status-redirect { color: #f39c12; }
-            .status-error { font-weight: bold; font-size: 11px; }
-            .dark .status-error { color: #f87171; }
-            .light .status-error { color: #e74c3c; }
-            .no-record { font-style: italic; font-size: 12px; }
-            .dark .no-record { color: #f87171; }
-            .light .no-record { color: #e74c3c; }
+            .compact-table .ip { font-family: monospace; font-size: 12px; }
+            .dark .compact-table .ip { color: #4ade80 !important; }
+            .light .compact-table .ip { color: #27ae60 !important; }
+            .compact-table .cname { font-family: monospace; font-size: 12px; }
+            .dark .compact-table .cname { color: #fbbf24 !important; }
+            .light .compact-table .cname { color: #f39c12 !important; }
+            .compact-table .org { font-size: 12px; }
+            .dark .compact-table .org { color: #a78bfa !important; }
+            .light .compact-table .org { color: #8e44ad !important; }
+            .compact-table .url { font-family: monospace; font-size: 12px; }
+            .dark .compact-table .url { color: #60a5fa !important; }
+            .light .compact-table .url { color: #3498db !important; }
+            .compact-table .time { font-family: monospace; font-size: 12px; }
+            .dark .compact-table .time { color: #60a5fa !important; }
+            .light .compact-table .time { color: #3498db !important; }
+            .compact-table .redirect-url { font-family: monospace; font-size: 12px; }
+            .dark .compact-table .redirect-url { color: #60a5fa !important; }
+            .light .compact-table .redirect-url { color: #3498db !important; }
+            .compact-table .status-success { font-weight: bold; font-size: 11px; }
+            .dark .compact-table .status-success { color: #4ade80 !important; }
+            .light .compact-table .status-success { color: #27ae60 !important; }
+            .compact-table .status-cname { font-weight: bold; font-size: 11px; }
+            .dark .compact-table .status-cname { color: #fbbf24 !important; }
+            .light .compact-table .status-cname { color: #f39c12 !important; }
+            .compact-table .status-redirect { font-weight: bold; font-size: 11px; }
+            .dark .compact-table .status-redirect { color: #fbbf24 !important; }
+            .light .compact-table .status-redirect { color: #f39c12 !important; }
+            .compact-table .status-error { font-weight: bold; font-size: 11px; }
+            .dark .compact-table .status-error { color: #f87171 !important; }
+            .light .compact-table .status-error { color: #e74c3c !important; }
+            .compact-table .no-record { font-style: italic; font-size: 12px; }
+            .dark .compact-table .no-record { color: #f87171 !important; }
+            .light .compact-table .no-record { color: #e74c3c !important; }
             .cname-resolution { transition: background-color 0.3s; }
             .dark .cname-resolution { background-color: #3d3d3d; }
             .light .cname-resolution { background-color: #f9f9f9; }
