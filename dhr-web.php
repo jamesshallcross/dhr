@@ -185,10 +185,10 @@ class DomainHealthReporter {
             if (!empty($data['org'])) {
                 echo "<div class='host-detail'><strong>Org:</strong> {$data['org']}</div>";
             }
+            echo "<div class='host-detail'><strong>Status:</strong> {$data['status']}</div>";
             if (!empty($data['dc'])) {
                 echo "<div class='host-detail'><strong>CF-DC:</strong> {$data['dc']}</div>";
             }
-            echo "<div class='host-detail'><strong>Status:</strong> {$data['status']}</div>";
             echo "</div>";
         }
         echo "</div>";
