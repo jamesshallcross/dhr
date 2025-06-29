@@ -295,7 +295,7 @@ class DomainHealthReporter {
             .header-section { margin-bottom: 10px; padding: 8px; border-radius: 3px; transition: background-color 0.3s; }
             .dark .header-section { background: #3d3d3d; }
             .light .header-section { background: #f8f9fa; }
-            .info-grid { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 15px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr 2.5fr; gap: 15px; }
             .info-item { font-size: 13px; transition: color 0.3s; }
             .dark .info-item { color: #e0e0e0; }
             .light .info-item { color: #333; }
