@@ -381,6 +381,22 @@ class DomainHealthReporter {
                 .host-card .host-name { font-weight: bold; font-size: 13px; margin-bottom: 5px; }
                 .host-card .host-detail { font-size: 11px; margin: 3px 0; }
                 .host-card .host-detail strong { min-width: 60px; display: inline-block; }
+                
+                /* Color coding for mobile cards */
+                .dark .host-card .ip { color: #4ade80 !important; }
+                .light .host-card .ip { color: #27ae60 !important; }
+                .dark .host-card .cname { color: #fbbf24 !important; }
+                .light .host-card .cname { color: #f39c12 !important; }
+                .dark .host-card .org { color: #a78bfa !important; }
+                .light .host-card .org { color: #8e44ad !important; }
+                .dark .host-card .status-success { color: #4ade80 !important; }
+                .light .host-card .status-success { color: #27ae60 !important; }
+                .dark .host-card .status-cname { color: #fbbf24 !important; }
+                .light .host-card .status-cname { color: #f39c12 !important; }
+                .dark .host-card .status-error { color: #f87171 !important; }
+                .light .host-card .status-error { color: #e74c3c !important; }
+                .dark .host-card .no-record { color: #f87171 !important; }
+                .light .host-card .no-record { color: #e74c3c !important; }
             }
             @media (min-width: 769px) {
                 .host-info-mobile { display: none; }
