@@ -136,7 +136,7 @@ class DomainHealthReporter {
                 echo "<tr>";
                 echo "<td>{$host}</td>";
                 echo "<td><span class='cname'>{$record}</span></td>";
-                echo "<td>CNAME</td>";
+                echo "<td></td>";
                 echo "<td><span class='status-cname'>CNAME</span></td>";
                 echo "<td></td>";
                 echo "</tr>";
@@ -144,7 +144,7 @@ class DomainHealthReporter {
                 $hostData[] = [
                     'host' => $host,
                     'ip_cname' => "<span class='cname'>{$record}</span>",
-                    'org' => 'CNAME',
+                    'org' => '',
                     'status' => "<span class='status-cname'>CNAME</span>",
                     'dc' => ''
                 ];
