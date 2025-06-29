@@ -19,7 +19,11 @@ class DomainHealthReporter {
     
     private function printHeader() {
         $dnsInfo = $this->dnsServer ? $this->dnsServer : $this->getSystemDns();
+        // Set UK timezone for proper BST/GMT display
+        $originalTimezone = date_default_timezone_get();
+        date_default_timezone_set('Europe/London');
         $timestamp = date('Y.m.d H:i T');
+        date_default_timezone_set($originalTimezone);
         
         echo "<div class='header-section'>";
         echo "<div class='info-grid'>";
