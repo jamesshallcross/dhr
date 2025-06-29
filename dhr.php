@@ -59,14 +59,22 @@ class DomainHealthReporter {
         $dnsInfo = $this->dnsServer ? $this->dnsServer : $this->getSystemDns();
         
         // Analysis information in columns
-        echo $this->colorize('ANALYSIS TARGET', 'blue', true) . str_repeat(' ', 15) . 
-             $this->colorize('DNS SERVER', 'blue', true) . str_repeat(' ', 25) . 
+        $col1Width = 30;
+        $col2Width = 40;
+        
+        // Headers
+        echo $this->colorize('ANALYSIS TARGET', 'blue', true) . 
+             str_repeat(' ', $col1Width - strlen('ANALYSIS TARGET')) . 
+             $this->colorize('DNS SERVER', 'blue', true) . 
+             str_repeat(' ', $col2Width - strlen('DNS SERVER')) . 
              $this->colorize('TIMESTAMP', 'blue', true) . "\n";
         echo str_repeat('─', $this->maxWidth) . "\n";
+        
+        // Data row
         echo $this->colorize($this->domain, 'yellow', true) . 
-             str_repeat(' ', 30 - strlen($this->domain)) . 
+             str_repeat(' ', $col1Width - strlen($this->domain)) . 
              $this->colorize($dnsInfo, 'green') . 
-             str_repeat(' ', 40 - strlen($dnsInfo)) . 
+             str_repeat(' ', $col2Width - strlen($dnsInfo)) . 
              $this->colorize(date('Y-m-d H:i:s T'), 'white') . "\n";
         echo "\n";
     }
