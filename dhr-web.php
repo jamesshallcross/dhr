@@ -449,20 +449,28 @@ class DomainHealthReporter {
     }
     
     private function getHSTSInfo($host) {
+        // First try direct request
+        $hstsResult = $this->checkHSTSForUrl("https://{$host}");
+        if ($hstsResult['hsts'] !== 'None') {
+            return $hstsResult;
+        }
+        
+        // If no HSTS on direct request, follow redirects to final URL
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => "https://{$host}",
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HEADER => true,
-            CURLOPT_NOBODY => false,  // Changed to false to get full response
-            CURLOPT_FOLLOWLOCATION => true,  // Changed to true to follow redirects
-            CURLOPT_MAXREDIRS => 3,
+            CURLOPT_NOBODY => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
         ]);
         
         $response = curl_exec($ch);
+        $finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
         $curlError = curl_error($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
@@ -474,7 +482,54 @@ class DomainHealthReporter {
             ];
         }
         
-        // Check for HSTS header (case-insensitive)
+        // Check final response for HSTS header
+        if (preg_match('/^strict-transport-security:\s*(.+)$/im', $response, $matches)) {
+            $hstsHeader = trim($matches[1]);
+            
+            // Extract max-age value
+            if (preg_match('/max-age=([0-9]+)/i', $hstsHeader, $maxAgeMatches)) {
+                $maxAgeSeconds = (int)$maxAgeMatches[1];
+                $hstsFormatted = $this->formatHSTSMaxAge($maxAgeSeconds);
+                
+                return [
+                    'hsts' => $hstsFormatted,
+                    'hsts_class' => 'ssl-good'
+                ];
+            }
+        }
+        
+        return [
+            'hsts' => 'None',
+            'hsts_class' => 'ssl-error'
+        ];
+    }
+    
+    private function checkHSTSForUrl($url) {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_NOBODY => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+        ]);
+        
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($curlError || !$response) {
+            return [
+                'hsts' => 'None',
+                'hsts_class' => 'ssl-error'
+            ];
+        }
+        
+        // Check for HSTS header
         if (preg_match('/^strict-transport-security:\s*(.+)$/im', $response, $matches)) {
             $hstsHeader = trim($matches[1]);
             
