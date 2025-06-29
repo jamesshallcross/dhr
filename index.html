@@ -309,14 +309,14 @@
                 </div>
                 
                 <div class="form-group narrow">
-                    <label for="dnsSelect">DNS Server (optional):</label>
+                    <label for="dnsSelect">DNS Server:</label>
                     <select id="dnsSelect" name="dnsSelect">
                         <option value="1.1.1.1" selected>Cloudflare (1.1.1.1)</option>
                         <option value="8.8.8.8">Google DNS (8.8.8.8)</option>
                         <option value="208.67.222.222">OpenDNS (208.67.222.222)</option>
                         <option value="other">Other...</option>
                     </select>
-                    <input type="text" id="dnsCustom" name="dnsCustom" placeholder="Enter custom DNS IP" style="display: none; margin-top: 5px;">
+                    <input type="text" id="dnsCustom" name="dnsCustom" placeholder="Enter custom DNS IP" style="display: none;">
                 </div>
                 
                 <div class="form-group button">
@@ -355,13 +355,27 @@
         
         // DNS server dropdown functionality
         document.getElementById('dnsSelect').addEventListener('change', function() {
+            const dropdown = this;
             const customInput = document.getElementById('dnsCustom');
+            
             if (this.value === 'other') {
+                // Hide dropdown, show input in same position
+                dropdown.style.display = 'none';
                 customInput.style.display = 'block';
                 customInput.focus();
-            } else {
+            }
+        });
+        
+        // Handle custom input blur (when user clicks away)
+        document.getElementById('dnsCustom').addEventListener('blur', function() {
+            const dropdown = document.getElementById('dnsSelect');
+            const customInput = this;
+            
+            // If empty, go back to dropdown
+            if (!customInput.value.trim()) {
                 customInput.style.display = 'none';
-                customInput.value = '';
+                dropdown.style.display = 'block';
+                dropdown.value = '1.1.1.1'; // Reset to default
             }
         });
         
@@ -381,9 +395,9 @@
             document.getElementById('results').style.display = 'none';
             
             // Get DNS server value
-            const dnsSelect = document.getElementById('dnsSelect').value;
-            const dnsCustom = document.getElementById('dnsCustom').value.trim();
-            const finalDnsServer = dnsSelect === 'other' ? dnsCustom : dnsSelect;
+            const dnsSelect = document.getElementById('dnsSelect');
+            const dnsCustom = document.getElementById('dnsCustom');
+            const finalDnsServer = dnsCustom.style.display === 'block' ? dnsCustom.value.trim() : dnsSelect.value;
             
             // Prepare form data
             const formData = new FormData();
