@@ -10,14 +10,28 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 15px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark {
             background-color: #1a1a1a;
             color: #e0e0e0;
         }
+        body.light {
+            background-color: #f5f5f5;
+            color: #333;
+        }
         .container {
-            background: #2d2d2d;
             padding: 15px;
             border-radius: 10px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .dark .container {
+            background: #2d2d2d;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .light .container {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .form-row {
             display: flex;
@@ -34,22 +48,60 @@
         .form-group.button {
             flex: 0 0 auto;
         }
+        .theme-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: 1px solid;
+            border-radius: 20px;
+            padding: 5px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        .dark .theme-toggle {
+            border-color: #555;
+            color: #e0e0e0;
+        }
+        .light .theme-toggle {
+            border-color: #ddd;
+            color: #666;
+        }
+        .theme-toggle:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
         label {
             display: block;
             margin-bottom: 3px;
             font-weight: bold;
-            color: #e0e0e0;
             font-size: 13px;
+            transition: color 0.3s;
+        }
+        .dark label {
+            color: #e0e0e0;
+        }
+        .light label {
+            color: #333;
         }
         input[type="text"] {
             width: 100%;
             padding: 8px 12px;
-            border: 2px solid #555;
+            border: 2px solid;
             border-radius: 5px;
             font-size: 14px;
             box-sizing: border-box;
+            transition: all 0.3s;
+        }
+        .dark input[type="text"] {
+            border-color: #555;
             background-color: #3d3d3d;
             color: #e0e0e0;
+        }
+        .light input[type="text"] {
+            border-color: #ddd;
+            background-color: white;
+            color: #333;
         }
         input[type="text"]:focus {
             border-color: #4CAF50;
@@ -71,21 +123,39 @@
         .results {
             margin-top: 20px;
             padding: 15px;
-            background-color: #2d2d2d;
             border-radius: 5px;
             border-left: 4px solid #4CAF50;
             display: none;
+            transition: all 0.3s;
+        }
+        .dark .results {
+            background-color: #2d2d2d;
+        }
+        .light .results {
+            background-color: #f9f9f9;
         }
         .loading {
             text-align: center;
             padding: 15px;
-            color: #b0b0b0;
             display: none;
+            transition: color 0.3s;
+        }
+        .dark .loading {
+            color: #b0b0b0;
+        }
+        .light .loading {
+            color: #666;
         }
         .error {
-            background-color: #3d2d2d;
             border-left-color: #f44336;
+        }
+        .dark .error {
+            background-color: #3d2d2d;
             color: #ff6b6b;
+        }
+        .light .error {
+            background-color: #ffe6e6;
+            color: #d32f2f;
         }
         .example {
             font-size: 12px;
@@ -96,6 +166,7 @@
 </head>
 <body>
     <div class="container">
+        <button class="theme-toggle" id="themeToggle">☀️ Light</button>
         <form id="domainForm">
             <div class="form-row">
                 <div class="form-group">
@@ -122,6 +193,23 @@
     </div>
 
     <script>
+        // Set default theme to dark
+        document.body.className = 'dark';
+        
+        // Theme toggle functionality
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            const body = document.body;
+            const isDark = body.classList.contains('dark');
+            
+            if (isDark) {
+                body.className = 'light';
+                this.innerHTML = '🌙 Dark';
+            } else {
+                body.className = 'dark';
+                this.innerHTML = '☀️ Light';
+            }
+        });
+        
         // Handle form submission
         document.getElementById('domainForm').addEventListener('submit', function(e) {
             e.preventDefault();
