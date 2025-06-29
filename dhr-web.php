@@ -205,9 +205,12 @@ class DomainHealthReporter {
             "https://www.{$this->domain}"
         ];
         
+        // Desktop table
         echo "<table class='compact-table'>";
         echo "<thead><tr><th>URL</th><th>Code</th><th>Redirect</th><th>Time</th></tr></thead>";
         echo "<tbody>";
+        
+        $redirectData = [];
         
         foreach ($urls as $url) {
             $result = $this->testRedirect($url);
@@ -222,9 +225,30 @@ class DomainHealthReporter {
             echo "<td><span class='redirect-url'>{$result['final_url']}</span></td>";
             echo "<td><span class='time'>" . number_format($result['time'], 2) . "s</span></td>";
             echo "</tr>";
+            
+            $redirectData[] = [
+                'url' => "<span class='url'>{$url}</span>",
+                'code' => "<span class='{$codeClass}'>{$result['code']}</span>",
+                'redirect' => "<span class='redirect-url'>{$result['final_url']}</span>",
+                'time' => "<span class='time'>" . number_format($result['time'], 2) . "s</span>"
+            ];
         }
         
         echo "</tbody></table>";
+        
+        // Mobile cards
+        echo "<div class='redirect-info-mobile'>";
+        foreach ($redirectData as $data) {
+            echo "<div class='redirect-card'>";
+            echo "<div class='redirect-url-header'>{$data['url']}</div>";
+            echo "<div class='redirect-detail'><strong>Code:</strong> {$data['code']}</div>";
+            if (!empty($data['redirect']) && strip_tags($data['redirect']) !== '') {
+                echo "<div class='redirect-detail'><strong>Redirect:</strong> {$data['redirect']}</div>";
+            }
+            echo "<div class='redirect-detail'><strong>Time:</strong> {$data['time']}</div>";
+            echo "</div>";
+        }
+        echo "</div>";
     }
     
     private function testRedirect($url) {
@@ -397,9 +421,33 @@ class DomainHealthReporter {
                 .light .host-card .status-error { color: #e74c3c !important; }
                 .dark .host-card .no-record { color: #f87171 !important; }
                 .light .host-card .no-record { color: #e74c3c !important; }
+                
+                /* Mobile card layout for Redirect Results */
+                .redirect-info-mobile { display: block; }
+                .redirect-card { border-radius: 5px; margin: 8px 0; padding: 10px; transition: background-color 0.3s; }
+                .dark .redirect-card { background: #3d3d3d; border: 1px solid #555; }
+                .light .redirect-card { background: #f9f9f9; border: 1px solid #ddd; }
+                .redirect-card .redirect-url-header { font-weight: bold; font-size: 13px; margin-bottom: 5px; }
+                .redirect-card .redirect-detail { font-size: 11px; margin: 3px 0; }
+                .redirect-card .redirect-detail strong { min-width: 60px; display: inline-block; }
+                
+                /* Color coding for mobile redirect cards */
+                .dark .redirect-card .url { color: #60a5fa !important; }
+                .light .redirect-card .url { color: #3498db !important; }
+                .dark .redirect-card .time { color: #60a5fa !important; }
+                .light .redirect-card .time { color: #3498db !important; }
+                .dark .redirect-card .redirect-url { color: #60a5fa !important; }
+                .light .redirect-card .redirect-url { color: #3498db !important; }
+                .dark .redirect-card .status-success { color: #4ade80 !important; }
+                .light .redirect-card .status-success { color: #27ae60 !important; }
+                .dark .redirect-card .status-redirect { color: #fbbf24 !important; }
+                .light .redirect-card .status-redirect { color: #f39c12 !important; }
+                .dark .redirect-card .status-error { color: #f87171 !important; }
+                .light .redirect-card .status-error { color: #e74c3c !important; }
             }
             @media (min-width: 769px) {
                 .host-info-mobile { display: none; }
+                .redirect-info-mobile { display: none; }
             }
             .dark .compact-table { background: #2d2d2d; }
             .light .compact-table { background: white; }
