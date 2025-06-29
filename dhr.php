@@ -121,36 +121,8 @@ class DomainHealthReporter {
     }
     
     private function printHeader() {
-        $title = "DOMAIN HEALTH REPORTER";
-        $subtitle = "Advanced Domain Analysis & Security Assessment";
-        $border = str_repeat('═', $this->maxWidth);
-        
         echo "\n";
-        echo $this->colorize($border, 'cyan') . "\n";
-        echo $this->colorize(str_pad($title, $this->maxWidth, ' ', STR_PAD_BOTH), 'white', true) . "\n";
-        echo $this->colorize(str_pad($subtitle, $this->maxWidth, ' ', STR_PAD_BOTH), 'blue') . "\n";
-        echo $this->colorize($border, 'cyan') . "\n\n";
-        
-        $dnsInfo = $this->dnsServer ? $this->dnsServer : $this->getSystemDns();
-        
-        // Analysis information in columns
-        $col1Width = 30;
-        $col2Width = 40;
-        
-        // Headers
-        echo $this->colorize('ANALYSIS TARGET', 'blue', true) . 
-             str_repeat(' ', $col1Width - strlen('ANALYSIS TARGET')) . 
-             $this->colorize('DNS SERVER', 'blue', true) . 
-             str_repeat(' ', $col2Width - strlen('DNS SERVER')) . 
-             $this->colorize('TIMESTAMP', 'blue', true) . "\n";
-        echo str_repeat('─', $this->maxWidth) . "\n";
-        
-        // Data row
-        echo $this->colorize($this->domain, 'yellow', true) . 
-             str_repeat(' ', $col1Width - strlen($this->domain)) . 
-             $this->colorize($dnsInfo, 'green') . 
-             str_repeat(' ', $col2Width - strlen($dnsInfo)) . 
-             $this->colorize(date('Y-m-d H:i:s T'), 'white') . "\n";
+        echo "Domain : " . $this->colorize($this->domain, 'red') . "\n";
         echo "\n";
     }
     
@@ -162,11 +134,8 @@ class DomainHealthReporter {
         return '8.8.8.8#53';
     }
     
-    private function printSectionHeader($title, $icon = '📊') {
-        $border = str_repeat('─', 60);
-        echo $this->colorize($border, 'cyan') . "\n";
-        echo $this->colorize("$icon $title", 'cyan', true) . "\n";
-        echo $this->colorize($border, 'cyan') . "\n";
+    private function printSectionHeader($title, $icon = '') {
+        echo $this->colorize($title . ":", 'cyan') . "\n";
     }
     
     private function dnsLookup($domain, $type = 'A', $server = null) {
@@ -204,7 +173,7 @@ class DomainHealthReporter {
     }
     
     private function analyzeHostInfo() {
-        $this->printSectionHeader('HOST INFORMATION ANALYSIS', '🖥️');
+        $this->printSectionHeader('HOST INFORMATION');
         
         // Use external column command for perfect alignment
         $data = [];
@@ -277,7 +246,6 @@ class DomainHealthReporter {
             if ($i === 0) {
                 // Header line
                 echo $this->colorize($line, 'white', true) . "\n";
-                echo str_repeat('─', strlen($line)) . "\n";
             } else if (!empty($line)) {
                 // Data line - apply colors based on content
                 $coloredLine = $line;
@@ -312,16 +280,14 @@ class DomainHealthReporter {
     }
     
     private function analyzeRedirects() {
-        $this->printSectionHeader('HTTP/HTTPS REDIRECT ANALYSIS', '🔄');
+        $this->printSectionHeader('HTTP/HTTPS REDIRECT RESULTS');
         
-        printf("%-35s %-8s %-8s %-35s %s\n",
-            $this->colorize('TEST URL', 'white', true),
+        printf("%-35s %-8s %-8s %s\n",
+            $this->colorize('REQUEST URL', 'white', true),
             $this->colorize('CODE', 'white', true),
             $this->colorize('TIME', 'white', true),
-            $this->colorize('FINAL URL', 'white', true),
-            $this->colorize('STATUS', 'white', true)
+            $this->colorize('REDIRECT URL', 'white', true)
         );
-        echo str_repeat('─', $this->maxWidth) . "\n";
         
         $urls = [
             "http://{$this->domain}",
@@ -344,12 +310,11 @@ class DomainHealthReporter {
                 $statusText = '↳ REDIRECT';
             }
             
-            printf("%-35s %-8s %-8s %-35s %s\n",
+            printf("%-35s %-8s %-8s %s\n",
                 $url,
                 $this->colorize($result['code'], $result['code'] < 400 ? 'green' : 'red'),
                 $this->colorize(number_format($result['time'], 2) . 's', 'blue'),
-                $this->colorize($result['final_url'], 'cyan'),
-                $this->colorize($statusText, $statusColor)
+                $this->colorize($result['final_url'], 'cyan')
             );
         }
         echo "\n";
@@ -386,185 +351,61 @@ class DomainHealthReporter {
     }
     
     private function analyzeDnsRecords() {
-        $recordTypes = [
-            'A' => ['icon' => '🅰️', 'desc' => 'IPv4 Address Records'],
-            'AAAA' => ['icon' => '🅰️', 'desc' => 'IPv6 Address Records'],
-            'CNAME' => ['icon' => '🔗', 'desc' => 'Canonical Name Records'],
-            'MX' => ['icon' => '📧', 'desc' => 'Mail Exchange Records'],
-            'NS' => ['icon' => '🌐', 'desc' => 'Name Server Records'],
-            'TXT' => ['icon' => '📝', 'desc' => 'Text Records'],
-        ];
-        
-        foreach ($recordTypes as $type => $info) {
-            $this->printSectionHeader("{$info['desc']} ($type)", $info['icon']);
-            
-            $records = $this->dnsLookup($this->domain, $type, $this->dnsServer);
-            
-            if (empty($records)) {
-                echo $this->colorize("No $type records found", 'dim') . "\n\n";
-                continue;
-            }
-            
-            if ($type === 'MX') {
-                printf("%-15s %s\n", 
-                    $this->colorize('PRIORITY', 'white', true),
-                    $this->colorize('MAIL SERVER', 'white', true)
-                );
-                echo str_repeat('─', 60) . "\n";
-                foreach ($records as $record) {
-                    $parts = explode(' ', $record, 2);
-                    $priority = $parts[0] ?? '';
-                    $server = $parts[1] ?? $record;
-                    printf("%-15s %s\n",
-                        $this->colorize($priority, 'yellow'),
-                        $this->colorize($server, 'green')
-                    );
-                }
-            } elseif ($type === 'TXT') {
-                printf("%-50s %s\n", 
-                    $this->colorize('RECORD TYPE', 'white', true),
-                    $this->colorize('VALUE', 'white', true)
-                );
-                echo str_repeat('─', 100) . "\n";
-                foreach ($records as $record) {
-                    $recordType = 'TXT';
-                    if (strpos($record, 'v=spf1') !== false) $recordType = 'SPF';
-                    elseif (strpos($record, 'v=DMARC1') !== false) $recordType = 'DMARC';
-                    elseif (strpos($record, 'google-site-verification') !== false) $recordType = 'Google Verify';
-                    elseif (strpos($record, '_globalsign-domain-verification') !== false) $recordType = 'GlobalSign';
-                    elseif (strpos($record, 'mandrill_verify') !== false) $recordType = 'Mandrill';
-                    
-                    printf("%-50s %s\n",
-                        $this->colorize($recordType, 'cyan'),
-                        $this->colorize($record, 'green')
-                    );
-                }
-            } else {
-                printf("%-40s %s\n", 
-                    $this->colorize('RECORD', 'white', true),
-                    $this->colorize('STATUS', 'white', true)
-                );
-                echo str_repeat('─', 60) . "\n";
-                foreach ($records as $record) {
-                    printf("%-40s %s\n",
-                        $this->colorize($record, 'green'),
-                        $this->colorize('✓ Active', 'green')
-                    );
-                }
-            }
-            echo "\n";
-        }
-    }
-    
-    private function analyzeEmailSecurity() {
-        $this->printSectionHeader('EMAIL SECURITY ANALYSIS', '🛡️');
-        
-        echo $this->colorize("DMARC Policy:", 'blue', true) . "\n";
-        $dmarc = $this->dnsLookup("_dmarc.{$this->domain}", 'TXT', $this->dnsServer);
-        if (empty($dmarc)) {
-            echo $this->colorize("❌ No DMARC record found - Email spoofing vulnerable", 'red') . "\n";
+        // MX RECORDS
+        $this->printSectionHeader('MX RECORDS');
+        $records = $this->dnsLookup($this->domain, 'MX', $this->dnsServer);
+        if (empty($records)) {
+            echo $this->colorize("No MX records found", 'dim') . "\n";
         } else {
-            echo $this->colorize("✓ DMARC configured:", 'green') . " " . $dmarc[0] . "\n";
+            foreach ($records as $record) {
+                $parts = explode(' ', $record, 2);
+                $priority = $parts[0] ?? '';
+                $server = $parts[1] ?? $record;
+                echo $this->colorize($priority, 'yellow') . " " . $this->colorize($server, 'green') . "\n";
+            }
         }
         echo "\n";
         
-        echo $this->colorize("SPF Policy:", 'blue', true) . "\n";
-        $spf = array_filter($this->dnsLookup($this->domain, 'TXT', $this->dnsServer), 
-                           fn($r) => strpos($r, 'v=spf1') !== false);
-        if (empty($spf)) {
-            echo $this->colorize("❌ No SPF record found - Email spoofing vulnerable", 'red') . "\n";
+        // NS RECORDS
+        $this->printSectionHeader('NS RECORDS');
+        $records = $this->dnsLookup($this->domain, 'NS', $this->dnsServer);
+        if (empty($records)) {
+            echo $this->colorize("No NS records found", 'dim') . "\n";
         } else {
-            $spfRecord = array_values($spf)[0];
-            echo $this->colorize("✓ SPF configured:", 'green') . " " . $spfRecord . "\n";
+            foreach ($records as $record) {
+                echo $this->colorize($record, 'green') . "\n";
+            }
+        }
+        echo "\n";
+    }
+    
+    private function analyzeEmailSecurity() {
+        $this->printSectionHeader('DMARC RECORD');
+        $dmarc = $this->dnsLookup("_dmarc.{$this->domain}", 'TXT', $this->dnsServer);
+        if (empty($dmarc)) {
+            echo $this->colorize("No DMARC record found", 'dim') . "\n";
+        } else {
+            echo $this->colorize($dmarc[0], 'green') . "\n";
         }
         echo "\n";
     }
     
     private function analyzeDomainInfo() {
-        $this->printSectionHeader('DOMAIN REGISTRATION INFO', '📄');
-        
+        $this->printSectionHeader('REGISTRAR INFORMATION');
         $whois = $this->whoisLookup($this->domain);
         
         if (preg_match('/Registrar:\s*(.+)/i', $whois, $matches)) {
-            echo $this->colorize("Registrar: ", 'blue', true) . $this->colorize(trim($matches[1]), 'green') . "\n";
+            echo $this->colorize(trim($matches[1]), 'green') . "\n";
         }
+        echo "\n";
         
+        $this->printSectionHeader('DOMAIN EXPIRATION');
         if (preg_match('/Registry Expiry Date:\s*(.+)/i', $whois, $matches)) {
-            $expiry = trim($matches[1]);
-            $expiryTime = strtotime($expiry);
-            $daysUntilExpiry = ($expiryTime - time()) / (24 * 3600);
-            
-            $color = $daysUntilExpiry < 30 ? 'red' : ($daysUntilExpiry < 90 ? 'yellow' : 'green');
-            $status = $daysUntilExpiry < 30 ? '⚠️ CRITICAL' : ($daysUntilExpiry < 90 ? '⚠️ WARNING' : '✓ OK');
-            
-            echo $this->colorize("Expiry: ", 'blue', true) . 
-                 $this->colorize($expiry, $color) . 
-                 $this->colorize(" (" . round($daysUntilExpiry) . " days) ", 'dim') .
-                 $this->colorize($status, $color) . "\n";
+            echo $this->colorize(trim($matches[1]), 'green') . "\n";
         }
         echo "\n";
     }
     
-    private function generateSummary() {
-        $this->printSectionHeader('SECURITY & HEALTH SUMMARY', '📊');
-        
-        $issues = [];
-        $warnings = [];
-        $passes = [];
-        
-        $aRecords = $this->dnsLookup($this->domain, 'A', $this->dnsServer);
-        if (empty($aRecords)) {
-            $issues[] = "No A record found for root domain";
-        } else {
-            $passes[] = "A record configured correctly";
-        }
-        
-        $dmarc = $this->dnsLookup("_dmarc.{$this->domain}", 'TXT', $this->dnsServer);
-        if (empty($dmarc)) {
-            $issues[] = "DMARC policy not configured - vulnerable to email spoofing";
-        } else {
-            $passes[] = "DMARC policy configured";
-        }
-        
-        $spf = array_filter($this->dnsLookup($this->domain, 'TXT', $this->dnsServer), 
-                           fn($r) => strpos($r, 'v=spf1') !== false);
-        if (empty($spf)) {
-            $issues[] = "SPF record not configured - vulnerable to email spoofing";
-        } else {
-            $passes[] = "SPF policy configured";
-        }
-        
-        if (!empty($issues)) {
-            echo $this->colorize("🚨 CRITICAL ISSUES:", 'red', true) . "\n";
-            foreach ($issues as $issue) {
-                echo "  " . $this->colorize("❌ $issue", 'red') . "\n";
-            }
-            echo "\n";
-        }
-        
-        if (!empty($warnings)) {
-            echo $this->colorize("⚠️ WARNINGS:", 'yellow', true) . "\n";
-            foreach ($warnings as $warning) {
-                echo "  " . $this->colorize("⚠️ $warning", 'yellow') . "\n";
-            }
-            echo "\n";
-        }
-        
-        if (!empty($passes)) {
-            echo $this->colorize("✅ HEALTH CHECKS PASSED:", 'green', true) . "\n";
-            foreach ($passes as $pass) {
-                echo "  " . $this->colorize("✓ $pass", 'green') . "\n";
-            }
-            echo "\n";
-        }
-        
-        $totalChecks = count($issues) + count($warnings) + count($passes);
-        $healthScore = round((count($passes) / $totalChecks) * 100);
-        
-        $scoreColor = $healthScore >= 80 ? 'green' : ($healthScore >= 60 ? 'yellow' : 'red');
-        echo $this->colorize("🎯 OVERALL HEALTH SCORE: ", 'blue', true) . 
-             $this->colorize("$healthScore%", $scoreColor, true) . "\n\n";
-    }
     
     public function analyze() {
         $this->printHeader();
@@ -573,11 +414,6 @@ class DomainHealthReporter {
         $this->analyzeDnsRecords();
         $this->analyzeEmailSecurity();
         $this->analyzeDomainInfo();
-        $this->generateSummary();
-        
-        echo $this->colorize(str_repeat('═', $this->maxWidth), 'cyan') . "\n";
-        echo $this->colorize("Analysis complete! Report generated by Domain Health Reporter v2.0", 'blue', true) . "\n";
-        echo $this->colorize(str_repeat('═', $this->maxWidth), 'cyan') . "\n\n";
     }
 }
 
