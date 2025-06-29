@@ -114,10 +114,13 @@ class DomainHealthReporter {
             
             if (filter_var($record, FILTER_VALIDATE_IP)) {
                 $org = $this->getOrgInfo($record);
+                $dc = $this->getDataCenter($host, $org);
+                
                 echo "<tr>";
                 echo "<td>{$host}</td>";
                 echo "<td><span class='ip'>{$record}</span></td>";
                 echo "<td><span class='org'>{$org}</span></td>";
+                echo "<td><span class='datacenter'>{$dc}</span></td>";
                 echo "<td><span class='status-success'>RESOLVED</span></td>";
                 echo "</tr>";
                 
@@ -125,6 +128,7 @@ class DomainHealthReporter {
                     'host' => $host,
                     'ip_cname' => "<span class='ip'>{$record}</span>",
                     'org' => "<span class='org'>{$org}</span>",
+                    'dc' => "<span class='datacenter'>{$dc}</span>",
                     'status' => "<span class='status-success'>RESOLVED</span>"
                 ];
             } else {
@@ -132,14 +136,16 @@ class DomainHealthReporter {
                 echo "<tr>";
                 echo "<td>{$host}</td>";
                 echo "<td><span class='cname'>{$record}</span></td>";
-                echo "<td></td>";
+                echo "<td>CNAME</td>";
+                echo "<td>N/A</td>";
                 echo "<td><span class='status-cname'>CNAME</span></td>";
                 echo "</tr>";
                 
                 $hostData[] = [
                     'host' => $host,
                     'ip_cname' => "<span class='cname'>{$record}</span>",
-                    'org' => '',
+                    'org' => 'CNAME',
+                    'dc' => 'N/A',
                     'status' => "<span class='status-cname'>CNAME</span>"
                 ];
                 
@@ -174,6 +180,9 @@ class DomainHealthReporter {
             echo "<div class='host-detail'><strong>IP/CNAME:</strong> {$data['ip_cname']}</div>";
             if (!empty($data['org'])) {
                 echo "<div class='host-detail'><strong>Org:</strong> {$data['org']}</div>";
+            }
+            if (!empty($data['dc'])) {
+                echo "<div class='host-detail'><strong>DC:</strong> {$data['dc']}</div>";
             }
             echo "<div class='host-detail'><strong>Status:</strong> {$data['status']}</div>";
             echo "</div>";
