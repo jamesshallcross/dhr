@@ -24,8 +24,8 @@ class DomainHealthReporter {
         echo "<div class='header-section'>";
         echo "<div class='info-grid'>";
         echo "<div class='info-item'><strong>Target:</strong> <span class='domain'>{$this->domain}</span></div>";
-        echo "<div class='info-item'><strong>Using {$dnsInfo} for DNS lookups</strong></div>";
         echo "<div class='info-item'><strong>Time:</strong> {$timestamp}</div>";
+        echo "<div class='info-item'><strong>Using <span class='dns-server'>{$dnsInfo}</span> for DNS lookups</strong></div>";
         echo "</div>";
         echo "</div>";
     }
@@ -302,6 +302,9 @@ class DomainHealthReporter {
             .domain { font-weight: bold; }
             .dark .domain { color: #ff6b6b; }
             .light .domain { color: #e74c3c; }
+            .dns-server { font-weight: bold; font-family: monospace; }
+            .dark .dns-server { color: #4ade80; }
+            .light .dns-server { color: #27ae60; }
             .compact-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; transition: all 0.3s; }
             .dark .compact-table { background: #2d2d2d; }
             .light .compact-table { background: white; }
