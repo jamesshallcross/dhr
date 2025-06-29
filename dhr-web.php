@@ -22,11 +22,23 @@ class DomainHealthReporter {
         $timestamp = date('Y.m.d H:i');
         
         echo "<div class='header-section'>";
-        echo "<div class='info-grid'>";
-        echo "<div class='info-item'><strong>Target:</strong> <span class='domain'>{$this->domain}</span></div>";
-        echo "<div class='info-item'><strong>Time:</strong> {$timestamp}</div>";
-        echo "<div class='info-item'><strong>Using <span class='dns-server'>{$dnsInfo}</span> for DNS lookups</strong></div>";
-        echo "</div>";
+        
+        // Create pipe-delimited data for header info
+        $output = "Target: {$this->domain}|Time: {$timestamp}|Using {$dnsInfo} for DNS lookups\n";
+        
+        // Use column command for perfect alignment
+        $formatted = shell_exec("echo " . escapeshellarg($output) . " | column -t -s '|'");
+        
+        // Apply colors to the formatted output
+        $line = trim($formatted);
+        if (!empty($line)) {
+            // Color the domain
+            $coloredLine = preg_replace('/\b' . preg_quote($this->domain, '/') . '\b/', '<span class="domain">' . $this->domain . '</span>', $line);
+            // Color the DNS server IP
+            $coloredLine = preg_replace('/\b' . preg_quote($dnsInfo, '/') . '\b/', '<span class="dns-server">' . $dnsInfo . '</span>', $coloredLine);
+            echo "<div class='header-line'>" . $coloredLine . "</div>";
+        }
+        
         echo "</div>";
     }
     
@@ -295,12 +307,9 @@ class DomainHealthReporter {
             .header-section { margin-bottom: 10px; padding: 8px; border-radius: 3px; transition: background-color 0.3s; }
             .dark .header-section { background: #3d3d3d; }
             .light .header-section { background: #f8f9fa; }
-            .info-grid { display: grid; grid-template-columns: 2fr 0.8fr 2fr; gap: 15px; }
-            .info-grid .info-item:nth-child(2) { text-align: center; }
-            .info-grid .info-item:last-child { text-align: right; }
-            .info-item { font-size: 13px; transition: color 0.3s; }
-            .dark .info-item { color: #e0e0e0; }
-            .light .info-item { color: #333; }
+            .header-line { font-size: 13px; transition: color 0.3s; font-family: monospace; }
+            .dark .header-line { color: #e0e0e0; }
+            .light .header-line { color: #333; }
             .domain { font-weight: bold; }
             .dark .domain { color: #ff6b6b; }
             .light .domain { color: #e74c3c; }
