@@ -57,9 +57,20 @@ class DomainHealthReporter {
         echo $this->colorize($border, 'cyan') . "\n\n";
         
         $dnsInfo = $this->dnsServer ? $this->dnsServer : $this->getSystemDns();
-        echo $this->colorize("🔍 Analysis Target: ", 'blue', true) . $this->colorize($this->domain, 'yellow', true) . "\n";
-        echo $this->colorize("🌐 DNS Server: ", 'blue', true) . $this->colorize($dnsInfo, 'green') . "\n";
-        echo $this->colorize("⏰ Timestamp: ", 'blue', true) . $this->colorize(date('Y-m-d H:i:s T'), 'white') . "\n\n";
+        
+        // Analysis information in columns
+        printf("%-25s %-35s %s\n",
+            $this->colorize('ANALYSIS TARGET', 'blue', true),
+            $this->colorize('DNS SERVER', 'blue', true),
+            $this->colorize('TIMESTAMP', 'blue', true)
+        );
+        echo str_repeat('─', $this->maxWidth) . "\n";
+        printf("%-25s %-35s %s\n",
+            $this->colorize($this->domain, 'yellow', true),
+            $this->colorize($dnsInfo, 'green'),
+            $this->colorize(date('Y-m-d H:i:s T'), 'white')
+        );
+        echo "\n";
     }
     
     private function getSystemDns() {
