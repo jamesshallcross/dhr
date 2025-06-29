@@ -552,6 +552,13 @@ class DomainHealthReporter {
         // NS RECORDS
         $this->printSectionHeader('NS Records');
         $records = $this->dnsLookup($this->domain, 'NS', $this->dnsServer);
+        
+        // Detect DNS provider
+        $dnsProvider = $this->detectDnsProvider($records);
+        if ($dnsProvider) {
+            echo "<div class='dns-provider-info'>{$dnsProvider}</div>";
+        }
+        
         if (empty($records)) {
             echo "<p class='no-records'>No NS records found</p>";
         } else {
@@ -641,6 +648,39 @@ class DomainHealthReporter {
                 if ($hostname === 'mx.stackmail.com.' || $hostname === 'mx.stackmail.com') {
                     return "Email by <span class='email-provider-name'>Stackmail/20i</span>";
                 }
+            }
+        }
+        
+        return null;
+    }
+    
+    private function detectDnsProvider($nsRecords) {
+        if (empty($nsRecords)) {
+            return null;
+        }
+        
+        // Check each NS record for provider patterns
+        foreach ($nsRecords as $record) {
+            $hostname = trim($record);
+            
+            // Check for Cloudflare
+            if (preg_match('/\.cloudflare\.com\.?$/i', $hostname)) {
+                return "DNS on <span class='dns-provider-name'>Cloudflare</span>";
+            }
+            
+            // Check for GoDaddy
+            if (preg_match('/\.domaincontrol\.com\.?$/i', $hostname)) {
+                return "DNS on <span class='dns-provider-name'>GoDaddy</span>";
+            }
+            
+            // Check for Stack/20i
+            if (preg_match('/\.stackdns\.com\.?$/i', $hostname)) {
+                return "DNS on <span class='dns-provider-name'>Stack/20i</span>";
+            }
+            
+            // Check for Amazon Route 53
+            if (preg_match('/awsdns/i', $hostname)) {
+                return "DNS on <span class='dns-provider-name'>Amazon Route 53</span>";
             }
         }
         
