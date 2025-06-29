@@ -22,11 +22,10 @@ class DomainHealthReporter {
         $timestamp = date('Y-m-d H:i:s T');
         
         echo "<div class='header-section'>";
-        echo "<h3>Analysis Summary</h3>";
         echo "<div class='info-grid'>";
-        echo "<div class='info-item'><strong>Target Domain:</strong> <span class='domain'>{$this->domain}</span></div>";
-        echo "<div class='info-item'><strong>DNS Server:</strong> {$dnsInfo}</div>";
-        echo "<div class='info-item'><strong>Analysis Time:</strong> {$timestamp}</div>";
+        echo "<div class='info-item'><strong>Target:</strong> <span class='domain'>{$this->domain}</span></div>";
+        echo "<div class='info-item'><strong>DNS:</strong> {$dnsInfo}</div>";
+        echo "<div class='info-item'><strong>Time:</strong> {$timestamp}</div>";
         echo "</div>";
         echo "</div>";
     }
@@ -40,7 +39,7 @@ class DomainHealthReporter {
     }
     
     private function printSectionHeader($title) {
-        echo "<h3>{$title}</h3>";
+        echo "<h4>{$title}</h4>";
     }
     
     private function dnsLookup($domain, $type = 'A', $server = null) {
@@ -84,8 +83,8 @@ class DomainHealthReporter {
             "www.{$this->domain}"
         ];
         
-        echo "<table class='results-table'>";
-        echo "<thead><tr><th>Hostname</th><th>IP/CNAME</th><th>Organization</th><th>Status</th></tr></thead>";
+        echo "<table class='compact-table'>";
+        echo "<thead><tr><th>Host</th><th>IP/CNAME</th><th>Organization</th><th>Status</th></tr></thead>";
         echo "<tbody>";
         
         foreach ($hosts as $host) {
@@ -161,8 +160,8 @@ class DomainHealthReporter {
             "https://www.{$this->domain}"
         ];
         
-        echo "<table class='results-table'>";
-        echo "<thead><tr><th>Request URL</th><th>Code</th><th>Time</th><th>Redirect URL</th></tr></thead>";
+        echo "<table class='compact-table'>";
+        echo "<thead><tr><th>URL</th><th>Code</th><th>Time</th><th>Redirect</th></tr></thead>";
         echo "<tbody>";
         
         foreach ($urls as $url) {
@@ -287,35 +286,35 @@ class DomainHealthReporter {
     public function analyze() {
         echo "
         <style>
-            .header-section { margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px; }
-            .info-item { font-size: 14px; }
+            .header-section { margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 3px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+            .info-item { font-size: 13px; }
             .domain { color: #e74c3c; font-weight: bold; }
-            .results-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-            .results-table th, .results-table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-            .results-table th { background-color: #f5f5f5; font-weight: bold; }
-            .results-table tr:hover { background-color: #f9f9f9; }
-            .ip { color: #27ae60; font-family: monospace; }
-            .cname { color: #f39c12; font-family: monospace; }
-            .org { color: #8e44ad; }
-            .url { color: #3498db; font-family: monospace; }
-            .time { color: #3498db; font-family: monospace; }
-            .redirect-url { color: #3498db; font-family: monospace; }
-            .status-success { color: #27ae60; font-weight: bold; }
-            .status-cname { color: #f39c12; font-weight: bold; }
-            .status-redirect { color: #f39c12; font-weight: bold; }
-            .status-error { color: #e74c3c; font-weight: bold; }
-            .no-record { color: #e74c3c; font-style: italic; }
+            .compact-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+            .compact-table th, .compact-table td { padding: 4px 8px; text-align: left; border-bottom: 1px solid #ddd; }
+            .compact-table th { background-color: #f5f5f5; font-weight: bold; font-size: 12px; }
+            .compact-table tr:hover { background-color: #f9f9f9; }
+            .ip { color: #27ae60; font-family: monospace; font-size: 12px; }
+            .cname { color: #f39c12; font-family: monospace; font-size: 12px; }
+            .org { color: #8e44ad; font-size: 12px; }
+            .url { color: #3498db; font-family: monospace; font-size: 12px; }
+            .time { color: #3498db; font-family: monospace; font-size: 12px; }
+            .redirect-url { color: #3498db; font-family: monospace; font-size: 12px; }
+            .status-success { color: #27ae60; font-weight: bold; font-size: 11px; }
+            .status-cname { color: #f39c12; font-weight: bold; font-size: 11px; }
+            .status-redirect { color: #f39c12; font-weight: bold; font-size: 11px; }
+            .status-error { color: #e74c3c; font-weight: bold; font-size: 11px; }
+            .no-record { color: #e74c3c; font-style: italic; font-size: 12px; }
             .cname-resolution { background-color: #f9f9f9; }
-            .dns-list { list-style: none; padding: 0; }
-            .dns-list li { padding: 5px 0; border-bottom: 1px solid #eee; }
+            .dns-list { list-style: none; padding: 0; margin: 5px 0; }
+            .dns-list li { padding: 2px 0; border-bottom: 1px solid #eee; font-size: 13px; }
             .priority { color: #f39c12; font-weight: bold; }
-            .server { color: #27ae60; font-family: monospace; }
-            .dmarc-record { background: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace; word-break: break-all; }
-            .registrar, .expiry { color: #27ae60; font-weight: bold; }
-            .no-records { color: #666; font-style: italic; }
-            h3 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px; }
-            h3:first-child { margin-top: 0; }
+            .server { color: #27ae60; font-family: monospace; font-size: 12px; }
+            .dmarc-record { background: #f8f9fa; padding: 8px; border-radius: 3px; font-family: monospace; word-break: break-all; font-size: 12px; }
+            .registrar, .expiry { color: #27ae60; font-weight: bold; font-size: 13px; }
+            .no-records { color: #666; font-style: italic; font-size: 12px; margin: 5px 0; }
+            h4 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 2px; margin: 15px 0 8px 0; font-size: 16px; }
+            h4:first-child { margin-top: 0; }
         </style>
         ";
         
