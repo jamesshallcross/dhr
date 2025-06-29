@@ -52,24 +52,35 @@
             position: absolute;
             top: 15px;
             right: 15px;
-            background: none;
-            border: 1px solid;
-            border-radius: 20px;
-            padding: 5px 12px;
+            width: 40px;
+            height: 20px;
+            border-radius: 10px;
+            border: none;
             cursor: pointer;
-            font-size: 12px;
             transition: all 0.3s;
+            position: relative;
         }
         .dark .theme-toggle {
-            border-color: #555;
-            color: #e0e0e0;
+            background-color: #4CAF50;
         }
         .light .theme-toggle {
-            border-color: #ddd;
-            color: #666;
+            background-color: #ccc;
         }
-        .theme-toggle:hover {
-            background-color: rgba(255,255,255,0.1);
+        .theme-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: white;
+            transition: transform 0.3s;
+        }
+        .dark .theme-toggle::after {
+            transform: translateX(20px);
+        }
+        .light .theme-toggle::after {
+            transform: translateX(2px);
         }
         label {
             display: block;
@@ -172,7 +183,7 @@
 </head>
 <body>
     <div class="container">
-        <button class="theme-toggle" id="themeToggle">☀️ Light</button>
+        <button class="theme-toggle" id="themeToggle"></button>
         <form id="domainForm">
             <div class="form-row">
                 <div class="form-group">
@@ -209,10 +220,8 @@
             
             if (isDark) {
                 body.className = 'light';
-                this.innerHTML = '🌙 Dark';
             } else {
                 body.className = 'dark';
-                this.innerHTML = '☀️ Light';
             }
         });
         
