@@ -85,7 +85,7 @@ class DomainHealthReporter {
         
         // Desktop table
         echo "<table class='compact-table'>";
-        echo "<thead><tr><th>Host</th><th>IP/CNAME</th><th>Organization</th><th>DC</th><th>Status</th></tr></thead>";
+        echo "<thead><tr><th>Host</th><th>IP/CNAME</th><th>Organization</th><th>Status</th><th>CF-DC</th></tr></thead>";
         echo "<tbody>";
         
         $hostData = [];
@@ -120,16 +120,16 @@ class DomainHealthReporter {
                 echo "<td>{$host}</td>";
                 echo "<td><span class='ip'>{$record}</span></td>";
                 echo "<td><span class='org'>{$org}</span></td>";
-                echo "<td><span class='datacenter'>{$dc}</span></td>";
                 echo "<td><span class='status-success'>RESOLVED</span></td>";
+                echo "<td><span class='datacenter'>{$dc}</span></td>";
                 echo "</tr>";
                 
                 $hostData[] = [
                     'host' => $host,
                     'ip_cname' => "<span class='ip'>{$record}</span>",
                     'org' => "<span class='org'>{$org}</span>",
-                    'dc' => "<span class='datacenter'>{$dc}</span>",
-                    'status' => "<span class='status-success'>RESOLVED</span>"
+                    'status' => "<span class='status-success'>RESOLVED</span>",
+                    'dc' => "<span class='datacenter'>{$dc}</span>"
                 ];
             } else {
                 // CNAME record
@@ -137,16 +137,16 @@ class DomainHealthReporter {
                 echo "<td>{$host}</td>";
                 echo "<td><span class='cname'>{$record}</span></td>";
                 echo "<td>CNAME</td>";
-                echo "<td>N/A</td>";
                 echo "<td><span class='status-cname'>CNAME</span></td>";
+                echo "<td></td>";
                 echo "</tr>";
                 
                 $hostData[] = [
                     'host' => $host,
                     'ip_cname' => "<span class='cname'>{$record}</span>",
                     'org' => 'CNAME',
-                    'dc' => 'N/A',
-                    'status' => "<span class='status-cname'>CNAME</span>"
+                    'status' => "<span class='status-cname'>CNAME</span>",
+                    'dc' => ''
                 ];
                 
                 // Resolve CNAME to final IP
@@ -182,7 +182,7 @@ class DomainHealthReporter {
                 echo "<div class='host-detail'><strong>Org:</strong> {$data['org']}</div>";
             }
             if (!empty($data['dc'])) {
-                echo "<div class='host-detail'><strong>DC:</strong> {$data['dc']}</div>";
+                echo "<div class='host-detail'><strong>CF-DC:</strong> {$data['dc']}</div>";
             }
             echo "<div class='host-detail'><strong>Status:</strong> {$data['status']}</div>";
             echo "</div>";
@@ -670,7 +670,7 @@ class DomainHealthReporter {
     private function getDataCenter($host, $org) {
         // Only check for data center if organization suggests Cloudflare/Shopify/WPEngine
         if (!preg_match('/cloudflare|shopify|wpengine/i', $org)) {
-            return 'N/A';
+            return '';
         }
         
         // Make HTTP request to get Cf-Ray header
@@ -691,7 +691,7 @@ class DomainHealthReporter {
         curl_close($ch);
         
         if ($curlError || !$response) {
-            return 'N/A';
+            return '';
         }
         
         // Look for Cf-Ray header
@@ -700,7 +700,7 @@ class DomainHealthReporter {
             return $dcCode;
         }
         
-        return 'N/A';
+        return '';
     }
     
     private function parseExpiryDate($whois) {
