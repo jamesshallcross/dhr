@@ -112,8 +112,18 @@ class DomainHealthReporter {
     
     private function getOrgInfo($ip) {
         $whois = $this->whoisLookup($ip);
-        if (preg_match('/(?:OrgName|org-name|descr):\s*(.+)/i', $whois, $matches)) {
-            return trim($matches[1]);
+        // Try multiple organization field patterns
+        $patterns = [
+            '/Organization:\s*(.+?)\s*\(/i',  // Organization: WPEngine, Inc. (WPENG)
+            '/OrgName:\s*(.+)/i',             // OrgName: Example Corp
+            '/org-name:\s*(.+)/i',            // org-name: Example Corp
+            '/descr:\s*(.+)/i'                // descr: Example Description
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $whois, $matches)) {
+                return trim($matches[1]);
+            }
         }
         return 'Unknown';
     }
@@ -121,12 +131,19 @@ class DomainHealthReporter {
     private function analyzeHostInfo() {
         $this->printSectionHeader('HOST INFORMATION ANALYSIS', '🖥️');
         
-        printf("%-40s %-25s %-30s %s\n", 
-            $this->colorize('HOSTNAME', 'white', true),
-            $this->colorize('IP/CNAME', 'white', true),
-            $this->colorize('ORGANIZATION', 'white', true),
-            $this->colorize('STATUS', 'white', true)
-        );
+        // Column widths for proper alignment
+        $col1Width = 40; // HOSTNAME
+        $col2Width = 25; // IP/CNAME
+        $col3Width = 35; // ORGANIZATION
+        
+        // Headers with proper alignment
+        echo $this->colorize('HOSTNAME', 'white', true) . 
+             str_repeat(' ', $col1Width - strlen('HOSTNAME')) . 
+             $this->colorize('IP/CNAME', 'white', true) . 
+             str_repeat(' ', $col2Width - strlen('IP/CNAME')) . 
+             $this->colorize('ORGANIZATION', 'white', true) . 
+             str_repeat(' ', $col3Width - strlen('ORGANIZATION')) . 
+             $this->colorize('STATUS', 'white', true) . "\n";
         echo str_repeat('─', $this->maxWidth) . "\n";
         
         $hosts = [
@@ -138,12 +155,13 @@ class DomainHealthReporter {
             $records = $this->dnsLookup($host, 'A', $this->dnsServer);
             
             if (empty($records)) {
-                printf("%-40s %-25s %-30s %s\n",
-                    $host,
-                    $this->colorize('No A record', 'red'),
-                    $this->colorize('N/A', 'dim'),
-                    $this->colorize('❌ FAIL', 'red')
-                );
+                echo $host . 
+                     str_repeat(' ', $col1Width - strlen($host)) . 
+                     $this->colorize('No A record', 'red') . 
+                     str_repeat(' ', $col2Width - strlen('No A record')) . 
+                     $this->colorize('N/A', 'dim') . 
+                     str_repeat(' ', $col3Width - strlen('N/A')) . 
+                     $this->colorize('❌ NO_RECORD', 'red') . "\n";
                 continue;
             }
             
@@ -151,29 +169,33 @@ class DomainHealthReporter {
             
             if (filter_var($record, FILTER_VALIDATE_IP)) {
                 $org = $this->getOrgInfo($record);
-                printf("%-40s %-25s %-30s %s\n",
-                    $host,
-                    $this->colorize($record, 'green'),
-                    $this->colorize($org, 'magenta'),
-                    $this->colorize('✓ OK', 'green')
-                );
+                echo $host . 
+                     str_repeat(' ', $col1Width - strlen($host)) . 
+                     $this->colorize($record, 'green') . 
+                     str_repeat(' ', $col2Width - strlen($record)) . 
+                     $this->colorize($org, 'magenta') . 
+                     str_repeat(' ', $col3Width - strlen($org)) . 
+                     $this->colorize('✓ RESOLVED', 'green') . "\n";
             } else {
-                printf("%-40s %-25s %-30s %s\n",
-                    $host,
-                    $this->colorize($record, 'yellow'),
-                    $this->colorize('(CNAME)', 'yellow'),
-                    $this->colorize('↳ CNAME', 'yellow')
-                );
+                echo $host . 
+                     str_repeat(' ', $col1Width - strlen($host)) . 
+                     $this->colorize($record, 'yellow') . 
+                     str_repeat(' ', $col2Width - strlen($record)) . 
+                     $this->colorize('(CNAME)', 'yellow') . 
+                     str_repeat(' ', $col3Width - strlen('(CNAME)')) . 
+                     $this->colorize('↳ CNAME', 'yellow') . "\n";
                 
                 $finalIp = $this->resolveCnameChain($record);
                 if ($finalIp) {
                     $org = $this->getOrgInfo($finalIp);
-                    printf("%-40s %-25s %-30s %s\n",
-                        "  └─ $record",
-                        $this->colorize($finalIp, 'green'),
-                        $this->colorize($org, 'magenta'),
-                        $this->colorize('✓ OK', 'green')
-                    );
+                    $indent = "  └─ $record";
+                    echo $indent . 
+                         str_repeat(' ', $col1Width - strlen($indent)) . 
+                         $this->colorize($finalIp, 'green') . 
+                         str_repeat(' ', $col2Width - strlen($finalIp)) . 
+                         $this->colorize($org, 'magenta') . 
+                         str_repeat(' ', $col3Width - strlen($org)) . 
+                         $this->colorize('✓ RESOLVED', 'green') . "\n";
                 }
             }
         }
