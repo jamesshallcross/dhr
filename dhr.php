@@ -241,7 +241,7 @@ class DomainHealthReporter {
                 $data[] = [
                     $host,
                     $record,
-                    '',
+                    ' ',  // Use space instead of empty string for column alignment
                     'CNAME'
                 ];
                 
@@ -267,6 +267,9 @@ class DomainHealthReporter {
         
         // Use column command for perfect alignment
         $formatted = shell_exec("echo " . escapeshellarg($output) . " | column -t -s '|'");
+        
+        // Debug: show raw formatted output
+        // echo "RAW OUTPUT:\n" . $formatted . "\n";
         
         // Apply colors to the formatted output
         $lines = explode("\n", trim($formatted));
