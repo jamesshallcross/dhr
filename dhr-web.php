@@ -313,7 +313,7 @@ class DomainHealthReporter {
         
         // Desktop table
         echo "<table class='compact-table'>";
-        echo "<thead><tr><th>Host</th><th>Provider</th><th>Valid Until</th><th>Days Left</th><th>Status</th></tr></thead>";
+        echo "<thead><tr><th>Host</th><th>Provider</th><th>Valid Until</th><th>Days Left</th><th>HSTS</th><th>Status</th></tr></thead>";
         echo "<tbody>";
         
         $sslData = [];
@@ -326,6 +326,7 @@ class DomainHealthReporter {
             echo "<td><span class='ssl-provider'>{$sslInfo['provider']}</span></td>";
             echo "<td><span class='ssl-expiry'>{$sslInfo['valid_until']}</span></td>";
             echo "<td><span class='{$sslInfo['days_class']}'>{$sslInfo['days_left']}</span></td>";
+            echo "<td><span class='{$sslInfo['hsts_class']}'>{$sslInfo['hsts']}</span></td>";
             echo "<td><span class='{$sslInfo['status_class']}'>{$sslInfo['status']}</span></td>";
             echo "</tr>";
             
@@ -334,6 +335,7 @@ class DomainHealthReporter {
                 'provider' => "<span class='ssl-provider'>{$sslInfo['provider']}</span>",
                 'valid_until' => "<span class='ssl-expiry'>{$sslInfo['valid_until']}</span>",
                 'days_left' => "<span class='{$sslInfo['days_class']}'>{$sslInfo['days_left']}</span>",
+                'hsts' => "<span class='{$sslInfo['hsts_class']}'>{$sslInfo['hsts']}</span>",
                 'status' => "<span class='{$sslInfo['status_class']}'>{$sslInfo['status']}</span>"
             ];
         }
@@ -348,6 +350,7 @@ class DomainHealthReporter {
             echo "<div class='ssl-detail'><strong>Provider:</strong> {$data['provider']}</div>";
             echo "<div class='ssl-detail'><strong>Valid Until:</strong> {$data['valid_until']}</div>";
             echo "<div class='ssl-detail'><strong>Days Left:</strong> {$data['days_left']}</div>";
+            echo "<div class='ssl-detail'><strong>HSTS:</strong> {$data['hsts']}</div>";
             echo "<div class='ssl-detail'><strong>Status:</strong> {$data['status']}</div>";
             echo "</div>";
         }
@@ -443,6 +446,80 @@ class DomainHealthReporter {
             'status' => $status,
             'status_class' => $statusClass
         ];
+    }
+    
+    private function getHSTSInfo($host) {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => "https://{$host}",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_NOBODY => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+        ]);
+        
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+        
+        if ($curlError || !$response) {
+            return [
+                'hsts' => 'None',
+                'hsts_class' => 'ssl-error'
+            ];
+        }
+        
+        // Check for HSTS header
+        if (preg_match('/strict-transport-security:\s*(.+)/i', $response, $matches)) {
+            $hstsHeader = trim($matches[1]);
+            
+            // Extract max-age value
+            if (preg_match('/max-age=([0-9]+)/i', $hstsHeader, $maxAgeMatches)) {
+                $maxAgeSeconds = (int)$maxAgeMatches[1];
+                $hstsFormatted = $this->formatHSTSMaxAge($maxAgeSeconds);
+                
+                return [
+                    'hsts' => $hstsFormatted,
+                    'hsts_class' => 'ssl-good'
+                ];
+            }
+        }
+        
+        return [
+            'hsts' => 'None',
+            'hsts_class' => 'ssl-error'
+        ];
+    }
+    
+    private function formatHSTSMaxAge($seconds) {
+        if ($seconds >= 31536000) { // 1 year
+            $years = floor($seconds / 31536000);
+            $remaining = $seconds % 31536000;
+            if ($remaining >= 2592000) { // At least 1 month remaining
+                $months = floor($remaining / 2592000);
+                return $years . 'y ' . $months . 'm';
+            }
+            return $years . ' year' . ($years > 1 ? 's' : '');
+        } elseif ($seconds >= 2592000) { // 1 month
+            $months = floor($seconds / 2592000);
+            $remaining = $seconds % 2592000;
+            if ($remaining >= 86400) { // At least 1 day remaining
+                $days = floor($remaining / 86400);
+                return $months . 'm ' . $days . 'd';
+            }
+            return $months . ' month' . ($months > 1 ? 's' : '');
+        } elseif ($seconds >= 86400) { // 1 day
+            $days = floor($seconds / 86400);
+            return $days . ' day' . ($days > 1 ? 's' : '');
+        } elseif ($seconds >= 3600) { // 1 hour
+            $hours = floor($seconds / 3600);
+            return $hours . ' hour' . ($hours > 1 ? 's' : '');
+        } else {
+            return $seconds . ' seconds';
+        }
     }
     
     private function analyzeDnsRecords() {
