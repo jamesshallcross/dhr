@@ -313,7 +313,7 @@ class DomainHealthReporter {
         
         // Desktop table
         echo "<table class='compact-table'>";
-        echo "<thead><tr><th>Host</th><th>Provider</th><th>Valid Until</th><th>Days Left</th><th>HSTS</th><th>Status</th></tr></thead>";
+        echo "<thead><tr><th>Host</th><th>Provider</th><th>Valid Until</th><th>Days Left</th><th>SSL Status</th><th>HSTS</th></tr></thead>";
         echo "<tbody>";
         
         $sslData = [];
@@ -326,8 +326,8 @@ class DomainHealthReporter {
             echo "<td><span class='ssl-provider'>{$sslInfo['provider']}</span></td>";
             echo "<td><span class='ssl-expiry'>{$sslInfo['valid_until']}</span></td>";
             echo "<td><span class='{$sslInfo['days_class']}'>{$sslInfo['days_left']}</span></td>";
-            echo "<td><span class='{$sslInfo['hsts_class']}'>{$sslInfo['hsts']}</span></td>";
             echo "<td><span class='{$sslInfo['status_class']}'>{$sslInfo['status']}</span></td>";
+            echo "<td><span class='{$sslInfo['hsts_class']}'>{$sslInfo['hsts']}</span></td>";
             echo "</tr>";
             
             $sslData[] = [
@@ -335,8 +335,8 @@ class DomainHealthReporter {
                 'provider' => "<span class='ssl-provider'>{$sslInfo['provider']}</span>",
                 'valid_until' => "<span class='ssl-expiry'>{$sslInfo['valid_until']}</span>",
                 'days_left' => "<span class='{$sslInfo['days_class']}'>{$sslInfo['days_left']}</span>",
-                'hsts' => "<span class='{$sslInfo['hsts_class']}'>{$sslInfo['hsts']}</span>",
-                'status' => "<span class='{$sslInfo['status_class']}'>{$sslInfo['status']}</span>"
+                'status' => "<span class='{$sslInfo['status_class']}'>{$sslInfo['status']}</span>",
+                'hsts' => "<span class='{$sslInfo['hsts_class']}'>{$sslInfo['hsts']}</span>"
             ];
         }
         
@@ -350,8 +350,8 @@ class DomainHealthReporter {
             echo "<div class='ssl-detail'><strong>Provider:</strong> {$data['provider']}</div>";
             echo "<div class='ssl-detail'><strong>Valid Until:</strong> {$data['valid_until']}</div>";
             echo "<div class='ssl-detail'><strong>Days Left:</strong> {$data['days_left']}</div>";
+            echo "<div class='ssl-detail'><strong>SSL Status:</strong> {$data['status']}</div>";
             echo "<div class='ssl-detail'><strong>HSTS:</strong> {$data['hsts']}</div>";
-            echo "<div class='ssl-detail'><strong>Status:</strong> {$data['status']}</div>";
             echo "</div>";
         }
         echo "</div>";
@@ -454,8 +454,9 @@ class DomainHealthReporter {
             CURLOPT_URL => "https://{$host}",
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HEADER => true,
-            CURLOPT_NOBODY => true,
-            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_NOBODY => false,  // Changed to false to get full response
+            CURLOPT_FOLLOWLOCATION => true,  // Changed to true to follow redirects
+            CURLOPT_MAXREDIRS => 3,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
@@ -463,17 +464,18 @@ class DomainHealthReporter {
         
         $response = curl_exec($ch);
         $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         
-        if ($curlError || !$response) {
+        if ($curlError || !$response || $httpCode >= 400) {
             return [
                 'hsts' => 'None',
                 'hsts_class' => 'ssl-error'
             ];
         }
         
-        // Check for HSTS header
-        if (preg_match('/strict-transport-security:\s*(.+)/i', $response, $matches)) {
+        // Check for HSTS header (case-insensitive)
+        if (preg_match('/^strict-transport-security:\s*(.+)$/im', $response, $matches)) {
             $hstsHeader = trim($matches[1]);
             
             // Extract max-age value
