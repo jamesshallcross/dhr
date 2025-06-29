@@ -303,6 +303,148 @@ class DomainHealthReporter {
         ];
     }
     
+    private function analyzeSSLCertificate() {
+        $this->printSectionHeader('SSL Certificate');
+        
+        $hosts = [
+            $this->domain,
+            "www.{$this->domain}"
+        ];
+        
+        // Desktop table
+        echo "<table class='compact-table'>";
+        echo "<thead><tr><th>Host</th><th>Provider</th><th>Valid Until</th><th>Days Left</th><th>Status</th></tr></thead>";
+        echo "<tbody>";
+        
+        $sslData = [];
+        
+        foreach ($hosts as $host) {
+            $sslInfo = $this->getSSLInfo($host);
+            
+            echo "<tr>";
+            echo "<td>{$host}</td>";
+            echo "<td><span class='ssl-provider'>{$sslInfo['provider']}</span></td>";
+            echo "<td><span class='ssl-expiry'>{$sslInfo['valid_until']}</span></td>";
+            echo "<td><span class='{$sslInfo['days_class']}'>{$sslInfo['days_left']}</span></td>";
+            echo "<td><span class='{$sslInfo['status_class']}'>{$sslInfo['status']}</span></td>";
+            echo "</tr>";
+            
+            $sslData[] = [
+                'host' => $host,
+                'provider' => "<span class='ssl-provider'>{$sslInfo['provider']}</span>",
+                'valid_until' => "<span class='ssl-expiry'>{$sslInfo['valid_until']}</span>",
+                'days_left' => "<span class='{$sslInfo['days_class']}'>{$sslInfo['days_left']}</span>",
+                'status' => "<span class='{$sslInfo['status_class']}'>{$sslInfo['status']}</span>"
+            ];
+        }
+        
+        echo "</tbody></table>";
+        
+        // Mobile cards
+        echo "<div class='ssl-info-mobile'>";
+        foreach ($sslData as $data) {
+            echo "<div class='ssl-card'>";
+            echo "<div class='ssl-host-header'>{$data['host']}</div>";
+            echo "<div class='ssl-detail'><strong>Provider:</strong> {$data['provider']}</div>";
+            echo "<div class='ssl-detail'><strong>Valid Until:</strong> {$data['valid_until']}</div>";
+            echo "<div class='ssl-detail'><strong>Days Left:</strong> {$data['days_left']}</div>";
+            echo "<div class='ssl-detail'><strong>Status:</strong> {$data['status']}</div>";
+            echo "</div>";
+        }
+        echo "</div>";
+    }
+    
+    private function getSSLInfo($host) {
+        $context = stream_context_create([
+            "ssl" => [
+                "capture_peer_cert" => true,
+                "verify_peer" => false,
+                "verify_peer_name" => false,
+            ],
+        ]);
+        
+        $socket = @stream_socket_client("ssl://{$host}:443", $errno, $errstr, 10, STREAM_CLIENT_CONNECT, $context);
+        
+        if (!$socket) {
+            return [
+                'provider' => 'N/A',
+                'valid_until' => 'N/A',
+                'days_left' => 'No SSL',
+                'days_class' => 'ssl-error',
+                'status' => 'No SSL',
+                'status_class' => 'status-error'
+            ];
+        }
+        
+        $cert = stream_context_get_params($socket);
+        fclose($socket);
+        
+        if (!isset($cert['options']['ssl']['peer_certificate'])) {
+            return [
+                'provider' => 'N/A',
+                'valid_until' => 'N/A',
+                'days_left' => 'No SSL',
+                'days_class' => 'ssl-error',
+                'status' => 'No SSL',
+                'status_class' => 'status-error'
+            ];
+        }
+        
+        $certInfo = openssl_x509_parse($cert['options']['ssl']['peer_certificate']);
+        
+        // Get provider/issuer
+        $provider = 'Unknown';
+        if (isset($certInfo['issuer']['O'])) {
+            $provider = $certInfo['issuer']['O'];
+        } elseif (isset($certInfo['issuer']['CN'])) {
+            $provider = $certInfo['issuer']['CN'];
+        }
+        
+        // Simplify common provider names
+        if (strpos($provider, 'Let\'s Encrypt') !== false) {
+            $provider = 'Let\'s Encrypt';
+        } elseif (strpos($provider, 'DigiCert') !== false) {
+            $provider = 'DigiCert';
+        } elseif (strpos($provider, 'Cloudflare') !== false) {
+            $provider = 'Cloudflare';
+        } elseif (strpos($provider, 'Amazon') !== false) {
+            $provider = 'Amazon';
+        }
+        
+        // Calculate expiry
+        $validUntil = date('Y.m.d', $certInfo['validTo_time_t']);
+        $daysLeft = floor(($certInfo['validTo_time_t'] - time()) / 86400);
+        
+        // Determine status and classes
+        if ($daysLeft > 30) {
+            $status = 'Valid';
+            $statusClass = 'status-success';
+            $daysClass = 'ssl-good';
+        } elseif ($daysLeft > 7) {
+            $status = 'Expires Soon';
+            $statusClass = 'status-cname';
+            $daysClass = 'ssl-warning';
+        } elseif ($daysLeft > 0) {
+            $status = 'Expires Very Soon';
+            $statusClass = 'status-error';
+            $daysClass = 'ssl-error';
+        } else {
+            $status = 'Expired';
+            $statusClass = 'status-error';
+            $daysClass = 'ssl-error';
+            $daysLeft = 'Expired';
+        }
+        
+        return [
+            'provider' => $provider,
+            'valid_until' => $validUntil,
+            'days_left' => is_numeric($daysLeft) ? $daysLeft . ' days' : $daysLeft,
+            'days_class' => $daysClass,
+            'status' => $status,
+            'status_class' => $statusClass
+        ];
+    }
+    
     private function analyzeDnsRecords() {
         // MX RECORDS
         $this->printSectionHeader('MX Records');
@@ -444,10 +586,32 @@ class DomainHealthReporter {
                 .light .redirect-card .status-redirect { color: #f39c12 !important; }
                 .dark .redirect-card .status-error { color: #f87171 !important; }
                 .light .redirect-card .status-error { color: #e74c3c !important; }
+                
+                /* Mobile card layout for SSL Certificate */
+                .ssl-info-mobile { display: block; }
+                .ssl-card { border-radius: 5px; margin: 8px 0; padding: 10px; transition: background-color 0.3s; }
+                .dark .ssl-card { background: #3d3d3d; border: 1px solid #555; }
+                .light .ssl-card { background: #f9f9f9; border: 1px solid #ddd; }
+                .ssl-card .ssl-host-header { font-weight: bold; font-size: 13px; margin-bottom: 5px; }
+                .ssl-card .ssl-detail { font-size: 11px; margin: 3px 0; }
+                .ssl-card .ssl-detail strong { min-width: 80px; display: inline-block; }
+                
+                /* Color coding for mobile SSL cards */
+                .dark .ssl-card .ssl-provider { color: #a78bfa !important; }
+                .light .ssl-card .ssl-provider { color: #8e44ad !important; }
+                .dark .ssl-card .ssl-expiry { color: #60a5fa !important; }
+                .light .ssl-card .ssl-expiry { color: #3498db !important; }
+                .dark .ssl-card .ssl-good { color: #4ade80 !important; }
+                .light .ssl-card .ssl-good { color: #27ae60 !important; }
+                .dark .ssl-card .ssl-warning { color: #fbbf24 !important; }
+                .light .ssl-card .ssl-warning { color: #f39c12 !important; }
+                .dark .ssl-card .ssl-error { color: #f87171 !important; }
+                .light .ssl-card .ssl-error { color: #e74c3c !important; }
             }
             @media (min-width: 769px) {
                 .host-info-mobile { display: none; }
                 .redirect-info-mobile { display: none; }
+                .ssl-info-mobile { display: none; }
             }
             .dark .compact-table { background: #2d2d2d; }
             .light .compact-table { background: white; }
