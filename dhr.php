@@ -1,6 +1,81 @@
 #!/usr/bin/env php
 <?php
 
+class ConsoleTable {
+    private $headers = [];
+    private $rows = [];
+    private $columnWidths = [];
+    
+    public function setHeaders(array $headers) {
+        $this->headers = $headers;
+        $this->calculateColumnWidths();
+    }
+    
+    public function addRow(array $row) {
+        $this->rows[] = $row;
+        $this->calculateColumnWidths();
+    }
+    
+    private function stripAnsiCodes($text) {
+        return preg_replace('/\033\[[0-9;]*m/', '', $text);
+    }
+    
+    private function getDisplayWidth($text) {
+        return mb_strlen($this->stripAnsiCodes($text));
+    }
+    
+    private function calculateColumnWidths() {
+        $this->columnWidths = [];
+        
+        // Check headers
+        foreach ($this->headers as $i => $header) {
+            $this->columnWidths[$i] = $this->getDisplayWidth($header);
+        }
+        
+        // Check all rows
+        foreach ($this->rows as $row) {
+            foreach ($row as $i => $cell) {
+                $width = $this->getDisplayWidth($cell);
+                $this->columnWidths[$i] = max($this->columnWidths[$i] ?? 0, $width);
+            }
+        }
+    }
+    
+    private function padCell($content, $width) {
+        $displayWidth = $this->getDisplayWidth($content);
+        $padding = max(0, $width - $displayWidth);
+        return $content . str_repeat(' ', $padding);
+    }
+    
+    public function render() {
+        if (empty($this->headers)) {
+            return '';
+        }
+        
+        $output = '';
+        
+        // Render headers
+        foreach ($this->headers as $i => $header) {
+            $output .= $this->padCell($header, $this->columnWidths[$i] + 2);
+        }
+        $output = rtrim($output) . "\n";
+        
+        // Render separator
+        $totalWidth = array_sum($this->columnWidths) + (count($this->columnWidths) * 2);
+        $output .= str_repeat('─', $totalWidth) . "\n";
+        
+        // Render rows
+        foreach ($this->rows as $row) {
+            foreach ($row as $i => $cell) {
+                $output .= $this->padCell($cell, $this->columnWidths[$i] + 2);
+            }
+            $output = rtrim($output) . "\n";
+        }
+        
+        return $output;
+    }
+}
+
 class DomainHealthReporter {
     private $domain;
     private $dnsServer;
@@ -131,21 +206,8 @@ class DomainHealthReporter {
     private function analyzeHostInfo() {
         $this->printSectionHeader('HOST INFORMATION ANALYSIS', '🖥️');
         
-        // Column widths for proper alignment
-        $col1Width = 40; // HOSTNAME
-        $col2Width = 25; // IP/CNAME
-        $col3Width = 35; // ORGANIZATION
-        
-        // Headers with proper alignment
-        echo $this->colorize('HOSTNAME', 'white', true) . 
-             str_repeat(' ', $col1Width - strlen('HOSTNAME')) . 
-             $this->colorize('IP/CNAME', 'white', true) . 
-             str_repeat(' ', $col2Width - strlen('IP/CNAME')) . 
-             $this->colorize('ORGANIZATION', 'white', true) . 
-             str_repeat(' ', $col3Width - strlen('ORGANIZATION')) . 
-             $this->colorize('STATUS', 'white', true) . "\n";
-        echo str_repeat('─', $this->maxWidth) . "\n";
-        
+        // Use external column command for perfect alignment
+        $data = [];
         $hosts = [
             $this->domain,
             "www.{$this->domain}"
@@ -155,13 +217,12 @@ class DomainHealthReporter {
             $records = $this->dnsLookup($host, 'A', $this->dnsServer);
             
             if (empty($records)) {
-                echo $host . 
-                     str_repeat(' ', $col1Width - strlen($host)) . 
-                     $this->colorize('No A record', 'red') . 
-                     str_repeat(' ', $col2Width - strlen('No A record')) . 
-                     $this->colorize('N/A', 'dim') . 
-                     str_repeat(' ', $col3Width - strlen('N/A')) . 
-                     $this->colorize('❌ NO_RECORD', 'red') . "\n";
+                $data[] = [
+                    $host,
+                    'No A record',
+                    'N/A',
+                    'NO_RECORD'
+                ];
                 continue;
             }
             
@@ -169,34 +230,61 @@ class DomainHealthReporter {
             
             if (filter_var($record, FILTER_VALIDATE_IP)) {
                 $org = $this->getOrgInfo($record);
-                echo $host . 
-                     str_repeat(' ', $col1Width - strlen($host)) . 
-                     $this->colorize($record, 'green') . 
-                     str_repeat(' ', $col2Width - strlen($record)) . 
-                     $this->colorize($org, 'magenta') . 
-                     str_repeat(' ', $col3Width - strlen($org)) . 
-                     $this->colorize('✓ RESOLVED', 'green') . "\n";
+                $data[] = [
+                    $host,
+                    $record,
+                    $org,
+                    'RESOLVED'
+                ];
             } else {
-                echo $host . 
-                     str_repeat(' ', $col1Width - strlen($host)) . 
-                     $this->colorize($record, 'yellow') . 
-                     str_repeat(' ', $col2Width - strlen($record)) . 
-                     $this->colorize('(CNAME)', 'yellow') . 
-                     str_repeat(' ', $col3Width - strlen('(CNAME)')) . 
-                     $this->colorize('↳ CNAME', 'yellow') . "\n";
+                // CNAME record
+                $data[] = [
+                    $host,
+                    $record,
+                    '',
+                    'CNAME'
+                ];
                 
+                // Resolve CNAME to final IP
                 $finalIp = $this->resolveCnameChain($record);
                 if ($finalIp) {
                     $org = $this->getOrgInfo($finalIp);
-                    $indent = "  └─ $record";
-                    echo $indent . 
-                         str_repeat(' ', $col1Width - strlen($indent)) . 
-                         $this->colorize($finalIp, 'green') . 
-                         str_repeat(' ', $col2Width - strlen($finalIp)) . 
-                         $this->colorize($org, 'magenta') . 
-                         str_repeat(' ', $col3Width - strlen($org)) . 
-                         $this->colorize('✓ RESOLVED', 'green') . "\n";
+                    $data[] = [
+                        '  └─ resolves to',
+                        $finalIp,
+                        $org,
+                        'RESOLVED'
+                    ];
                 }
+            }
+        }
+        
+        // Create pipe-delimited data
+        $output = "HOSTNAME|IP/CNAME|ORGANIZATION|STATUS\n";
+        foreach ($data as $row) {
+            $output .= implode('|', $row) . "\n";
+        }
+        
+        // Use column command for perfect alignment
+        $formatted = shell_exec("echo " . escapeshellarg($output) . " | column -t -s '|'");
+        
+        // Apply colors to the formatted output
+        $lines = explode("\n", trim($formatted));
+        foreach ($lines as $i => $line) {
+            if ($i === 0) {
+                // Header line
+                echo $this->colorize($line, 'white', true) . "\n";
+                echo str_repeat('─', strlen($line)) . "\n";
+            } else if (!empty($line)) {
+                // Data line - apply colors based on content
+                $coloredLine = $line;
+                $coloredLine = preg_replace('/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/', $this->colorize('$0', 'green'), $coloredLine);
+                $coloredLine = preg_replace('/\bWPEngine[^|]*/', $this->colorize('$0', 'magenta'), $coloredLine);
+                $coloredLine = preg_replace('/\bRESOLVED\b/', $this->colorize('✓ RESOLVED', 'green'), $coloredLine);
+                $coloredLine = preg_replace('/\bCNAME\b/', $this->colorize('↳ CNAME', 'yellow'), $coloredLine);
+                $coloredLine = preg_replace('/\bNO_RECORD\b/', $this->colorize('❌ NO_RECORD', 'red'), $coloredLine);
+                $coloredLine = preg_replace('/\b[a-zA-Z0-9.-]+\.com\.?\b/', $this->colorize('$0', 'yellow'), $coloredLine);
+                echo $coloredLine . "\n";
             }
         }
         echo "\n";
