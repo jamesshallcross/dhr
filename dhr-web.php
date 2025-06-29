@@ -341,8 +341,10 @@ class DomainHealthReporter {
             $hstsInfo = $this->getHSTSInfo($host);
             $sslInfo = array_merge($sslInfo, $hstsInfo);
             
+            $sslLabsUrl = "https://www.ssllabs.com/ssltest/analyze.html?d=" . urlencode($host) . "&hideResults=on&latest";
+            
             echo "<tr>";
-            echo "<td>{$host}</td>";
+            echo "<td><a href='{$sslLabsUrl}' target='_blank' class='ssl-labs-link'>{$host}</a></td>";
             echo "<td><span class='ssl-provider'>{$sslInfo['provider']}</span></td>";
             echo "<td><span class='ssl-expiry'>{$sslInfo['valid_until']}</span></td>";
             echo "<td><span class='{$sslInfo['days_class']}'>{$sslInfo['days_left']}</span></td>";
@@ -351,7 +353,7 @@ class DomainHealthReporter {
             echo "</tr>";
             
             $sslData[] = [
-                'host' => $host,
+                'host' => "<a href='{$sslLabsUrl}' target='_blank' class='ssl-labs-link'>{$host}</a>",
                 'provider' => "<span class='ssl-provider'>{$sslInfo['provider']}</span>",
                 'valid_until' => "<span class='ssl-expiry'>{$sslInfo['valid_until']}</span>",
                 'days_left' => "<span class='{$sslInfo['days_class']}'>{$sslInfo['days_left']}</span>",
