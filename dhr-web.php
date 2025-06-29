@@ -232,15 +232,18 @@ class DomainHealthReporter {
             elseif ($result['code'] >= 300 && $result['code'] < 400) $codeClass = 'status-redirect';
             else $codeClass = 'status-error';
             
+            // Make URL bold if code is 200
+            $urlClass = ($result['code'] == 200) ? 'url url-bold' : 'url';
+            
             echo "<tr>";
-            echo "<td><span class='url'>{$url}</span></td>";
+            echo "<td><span class='{$urlClass}'>{$url}</span></td>";
             echo "<td><span class='{$codeClass}'>{$result['code']}</span></td>";
             echo "<td><span class='redirect-url'>{$result['final_url']}</span></td>";
             echo "<td><span class='time'>" . number_format($result['time'], 2) . "s</span></td>";
             echo "</tr>";
             
             $redirectData[] = [
-                'url' => "<span class='url'>{$url}</span>",
+                'url' => "<span class='{$urlClass}'>{$url}</span>",
                 'code' => "<span class='{$codeClass}'>{$result['code']}</span>",
                 'redirect' => "<span class='redirect-url'>{$result['final_url']}</span>",
                 'time' => "<span class='time'>" . number_format($result['time'], 2) . "s</span>"
