@@ -155,7 +155,7 @@ class DomainHealthReporter {
                     $org = $this->getOrgInfo($finalIp);
                     $dc = $this->getDataCenter($record, $org);
                     
-                    echo "<tr class='cname-resolution'>";
+                    echo "<tr>";
                     echo "<td>&nbsp;&nbsp;└─ {$record}</td>";
                     echo "<td><span class='ip'>{$finalIp}</span></td>";
                     echo "<td><span class='org'>{$org}</span></td>";
