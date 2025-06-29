@@ -378,7 +378,7 @@ class DomainHealthReporter {
         curl_close($ch);
         
         // For redirects, extract the Location header
-        $redirectUrl = $url;  // Default to original URL
+        $redirectUrl = '';  // Default to empty
         if ($code >= 300 && $code < 400 && $response) {
             if (preg_match('/Location:\s*(.+)/i', $response, $matches)) {
                 $redirectUrl = trim($matches[1]);
@@ -389,7 +389,7 @@ class DomainHealthReporter {
                 }
             }
         } elseif ($code >= 200 && $code < 300) {
-            $redirectUrl = $effectiveUrl ?: $url;
+            $redirectUrl = '';  // No redirect for successful responses
         } else {
             $redirectUrl = 'Error';
         }
