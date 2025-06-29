@@ -591,8 +591,12 @@ class DomainHealthReporter {
         }
         
         $this->printSectionHeader('Domain Expiration');
-        if (preg_match('/Registry Expiry Date:\s*(.+)/i', $whois, $matches)) {
-            echo "<p class='expiry'>" . trim($matches[1]) . "</p>";
+        $expiryInfo = $this->parseExpiryDate($whois);
+        if ($expiryInfo) {
+            echo "<p class='expiry'>";
+            echo "<span class='expiry-date'>{$expiryInfo['formatted_date']}</span> ";
+            echo "(<span class='{$expiryInfo['days_class']}'>{$expiryInfo['days_text']}</span>)";
+            echo "</p>";
         } else {
             echo "<p class='no-records'>Expiration date not found</p>";
         }
@@ -652,6 +656,89 @@ class DomainHealthReporter {
         }
         
         return null;
+    }
+    
+    private function parseExpiryDate($whois) {
+        // Multiple patterns for different whois formats
+        $patterns = [
+            '/Registry Expiry Date:\s*(.+)/i',    // Standard format
+            '/Expiry date:\s*(.+)/i',             // UK domains
+            '/Expiration Date:\s*(.+)/i',         // Alternative format
+            '/Domain expires:\s*(.+)/i',          // Another format
+            '/Expires on:\s*(.+)/i'               // Yet another format
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $whois, $matches)) {
+                $dateString = trim($matches[1]);
+                
+                // Try to parse various date formats
+                $timestamp = $this->parseVariousDateFormats($dateString);
+                
+                if ($timestamp) {
+                    $formattedDate = date('Y.m.d', $timestamp);
+                    $daysLeft = floor(($timestamp - time()) / 86400);
+                    
+                    // Determine status and styling
+                    if ($daysLeft > 90) {
+                        $daysClass = 'ssl-good';
+                        $daysText = $daysLeft . ' days';
+                    } elseif ($daysLeft > 30) {
+                        $daysClass = 'ssl-warning';
+                        $daysText = $daysLeft . ' days';
+                    } elseif ($daysLeft > 0) {
+                        $daysClass = 'ssl-error';
+                        $daysText = $daysLeft . ' days';
+                    } else {
+                        $daysClass = 'ssl-error';
+                        $daysText = 'Expired';
+                    }
+                    
+                    return [
+                        'formatted_date' => $formattedDate,
+                        'days_left' => $daysLeft,
+                        'days_text' => $daysText,
+                        'days_class' => $daysClass
+                    ];
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    private function parseVariousDateFormats($dateString) {
+        // Remove common suffixes and clean up
+        $dateString = preg_replace('/\s*\(.*\)$/', '', $dateString); // Remove (timezone) info
+        $dateString = trim($dateString);
+        
+        // Try various date formats
+        $formats = [
+            'Y-m-d\TH:i:s\Z',          // ISO format with Z
+            'Y-m-d\TH:i:s.u\Z',        // ISO format with microseconds
+            'Y-m-d H:i:s',             // Standard datetime
+            'Y-m-d',                   // Just date
+            'd-M-Y',                   // 07-Mar-2026 format
+            'd/m/Y',                   // DD/MM/YYYY
+            'm/d/Y',                   // MM/DD/YYYY
+            'j M Y',                   // 7 Mar 2026
+            'M j, Y',                  // Mar 7, 2026
+            'd.m.Y',                   // DD.MM.YYYY
+        ];
+        
+        foreach ($formats as $format) {
+            $timestamp = strtotime($dateString);
+            if ($timestamp !== false) {
+                return $timestamp;
+            }
+            
+            $date = DateTime::createFromFormat($format, $dateString);
+            if ($date !== false) {
+                return $date->getTimestamp();
+            }
+        }
+        
+        return false;
     }
     
     private function detectDnsProvider($nsRecords) {
