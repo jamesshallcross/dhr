@@ -24,7 +24,7 @@ class DomainHealthReporter {
         echo "<div class='header-section'>";
         echo "<div class='info-grid'>";
         echo "<div class='info-item'><strong>Target:</strong> <span class='domain'>{$this->domain}</span></div>";
-        echo "<div class='info-item'><strong>DNS:</strong> {$dnsInfo}</div>";
+        echo "<div class='info-item'><strong>Using {$dnsInfo} for DNS lookups</strong></div>";
         echo "<div class='info-item'><strong>Time:</strong> {$timestamp}</div>";
         echo "</div>";
         echo "</div>";
@@ -157,7 +157,7 @@ class DomainHealthReporter {
         ];
         
         echo "<table class='compact-table'>";
-        echo "<thead><tr><th>URL</th><th>Code</th><th>Time</th><th>Redirect</th></tr></thead>";
+        echo "<thead><tr><th>URL</th><th>Code</th><th>Redirect</th><th>Time</th></tr></thead>";
         echo "<tbody>";
         
         foreach ($urls as $url) {
@@ -170,8 +170,8 @@ class DomainHealthReporter {
             echo "<tr>";
             echo "<td><span class='url'>{$url}</span></td>";
             echo "<td><span class='{$codeClass}'>{$result['code']}</span></td>";
-            echo "<td><span class='time'>" . number_format($result['time'], 2) . "s</span></td>";
             echo "<td><span class='redirect-url'>{$result['final_url']}</span></td>";
+            echo "<td><span class='time'>" . number_format($result['time'], 2) . "s</span></td>";
             echo "</tr>";
         }
         
@@ -295,7 +295,7 @@ class DomainHealthReporter {
             .header-section { margin-bottom: 10px; padding: 8px; border-radius: 3px; transition: background-color 0.3s; }
             .dark .header-section { background: #3d3d3d; }
             .light .header-section { background: #f8f9fa; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 15px; }
             .info-item { font-size: 13px; transition: color 0.3s; }
             .dark .info-item { color: #e0e0e0; }
             .light .info-item { color: #333; }
