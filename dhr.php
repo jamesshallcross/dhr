@@ -362,26 +362,42 @@ class DomainHealthReporter {
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HEADER => true,
             CURLOPT_NOBODY => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_FOLLOWLOCATION => false,  // Don't follow redirects automatically
             CURLOPT_TIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_USERAGENT => 'Domain Health Reporter/2.0'
         ]);
         
         $start = microtime(true);
-        curl_exec($ch);
+        $response = curl_exec($ch);
         $time = microtime(true) - $start;
         
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+        $effectiveUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
         
         curl_close($ch);
+        
+        // For redirects, extract the Location header
+        $redirectUrl = $url;  // Default to original URL
+        if ($code >= 300 && $code < 400 && $response) {
+            if (preg_match('/Location:\s*(.+)/i', $response, $matches)) {
+                $redirectUrl = trim($matches[1]);
+                // Handle relative URLs
+                if (strpos($redirectUrl, 'http') !== 0) {
+                    $parsedUrl = parse_url($url);
+                    $redirectUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'] . $redirectUrl;
+                }
+            }
+        } elseif ($code >= 200 && $code < 300) {
+            $redirectUrl = $effectiveUrl ?: $url;
+        } else {
+            $redirectUrl = 'Error';
+        }
         
         return [
             'code' => $code,
             'time' => $time,
-            'final_url' => $finalUrl ?: $url
+            'final_url' => $redirectUrl
         ];
     }
     
