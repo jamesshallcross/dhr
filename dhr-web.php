@@ -153,18 +153,22 @@ class DomainHealthReporter {
                 $finalIp = $this->resolveCnameChain($record);
                 if ($finalIp) {
                     $org = $this->getOrgInfo($finalIp);
+                    $dc = $this->getDataCenter($record, $org);
+                    
                     echo "<tr class='cname-resolution'>";
                     echo "<td>&nbsp;&nbsp;└─ {$record}</td>";
                     echo "<td><span class='ip'>{$finalIp}</span></td>";
                     echo "<td><span class='org'>{$org}</span></td>";
                     echo "<td><span class='status-success'>RESOLVED</span></td>";
+                    echo "<td><span class='datacenter'>{$dc}</span></td>";
                     echo "</tr>";
                     
                     $hostData[] = [
                         'host' => "&nbsp;&nbsp;└─ {$record}",
                         'ip_cname' => "<span class='ip'>{$finalIp}</span>",
                         'org' => "<span class='org'>{$org}</span>",
-                        'status' => "<span class='status-success'>RESOLVED</span>"
+                        'status' => "<span class='status-success'>RESOLVED</span>",
+                        'dc' => "<span class='datacenter'>{$dc}</span>"
                     ];
                 }
             }
