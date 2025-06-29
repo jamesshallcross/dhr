@@ -529,6 +529,13 @@ class DomainHealthReporter {
         // MX RECORDS
         $this->printSectionHeader('MX Records');
         $records = $this->dnsLookup($this->domain, 'MX', $this->dnsServer);
+        
+        // Detect email provider
+        $emailProvider = $this->detectEmailProvider($records);
+        if ($emailProvider) {
+            echo "<div class='email-provider-info'>{$emailProvider}</div>";
+        }
+        
         if (empty($records)) {
             echo "<p class='no-records'>No MX records found</p>";
         } else {
