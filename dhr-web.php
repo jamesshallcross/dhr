@@ -877,8 +877,21 @@ class DomainHealthReporter {
                 }
             }
             
-            // Sort ip4 and include parts alphabetically
-            sort($ip4Parts, SORT_STRING | SORT_FLAG_CASE);
+            // Sort ip4 parts by IP address numerically
+            usort($ip4Parts, function($a, $b) {
+                // Extract IP from ip4:x.x.x.x or ip4:x.x.x.x/x format
+                $ipA = preg_replace('/^ip4:/', '', $a);
+                $ipB = preg_replace('/^ip4:/', '', $b);
+                
+                // Remove CIDR notation for comparison
+                $ipA = explode('/', $ipA)[0];
+                $ipB = explode('/', $ipB)[0];
+                
+                // Convert to comparable format
+                return ip2long($ipA) <=> ip2long($ipB);
+            });
+            
+            // Sort include parts alphabetically
             sort($includeParts, SORT_STRING | SORT_FLAG_CASE);
             
             // Combine in order: version, ip4 (sorted), include (sorted), others
