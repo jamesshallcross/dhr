@@ -1175,10 +1175,15 @@ class DomainHealthReporter {
             
             // Try to get WordPress version from wp-includes assets
             if (preg_match('/wp-includes.*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
-                // Validate this looks like a WordPress version (not jQuery etc)
-                // WordPress versions are typically 3.0+ and less than 10.0
-                if (version_compare($matches[1], '3.0', '>=') && version_compare($matches[1], '10.0', '<')) {
-                    $version = $matches[1];
+                $versionNum = $matches[1];
+                // Validate this looks like a WordPress version (not jQuery, React, etc)
+                // WordPress versions: 3.0-6.x range, typically with specific patterns
+                // Exclude common false positives: jQuery (3.6.x, 3.7.x), React (18.x)
+                if (version_compare($versionNum, '3.0', '>=') && 
+                    version_compare($versionNum, '7.0', '<') &&
+                    !preg_match('/^3\.[67]\./', $versionNum) && // Exclude jQuery 3.6.x, 3.7.x
+                    !preg_match('/^18\./', $versionNum)) {     // Exclude React 18.x
+                    $version = $versionNum;
                     $method = 'Asset version analysis';
                 }
             }
