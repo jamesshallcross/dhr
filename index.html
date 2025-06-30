@@ -397,6 +397,28 @@
             text-decoration: underline !important;
             opacity: 0.8;
         }
+        
+        /* Two-column layouts for desktop */
+        .dns-records-desktop, .domain-info-desktop {
+            display: flex;
+            gap: 20px;
+        }
+        .dns-column, .domain-column {
+            flex: 1;
+        }
+        .dns-records-mobile, .domain-info-mobile {
+            display: none;
+        }
+        
+        /* Mobile single-column layouts */
+        @media (max-width: 768px) {
+            .dns-records-desktop, .domain-info-desktop {
+                display: none;
+            }
+            .dns-records-mobile, .domain-info-mobile {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>

@@ -546,6 +546,10 @@ class DomainHealthReporter {
     }
     
     private function analyzeDnsRecords() {
+        // Desktop two-column layout
+        echo "<div class='dns-records-desktop'>";
+        echo "<div class='dns-column'>";
+        
         // MX RECORDS
         $this->printSectionHeader('MX Records');
         $records = $this->dnsLookup($this->domain, 'MX', $this->dnsServer);
@@ -569,6 +573,9 @@ class DomainHealthReporter {
             echo "</ul>";
         }
         
+        echo "</div>"; // End left column
+        echo "<div class='dns-column'>";
+        
         // NS RECORDS
         $this->printSectionHeader('NS Records');
         $records = $this->dnsLookup($this->domain, 'NS', $this->dnsServer);
@@ -588,6 +595,57 @@ class DomainHealthReporter {
             }
             echo "</ul>";
         }
+        
+        echo "</div>"; // End right column
+        echo "</div>"; // End desktop layout
+        
+        // Mobile single-column layout
+        echo "<div class='dns-records-mobile'>";
+        
+        // MX RECORDS (mobile)
+        $this->printSectionHeader('MX Records');
+        $records = $this->dnsLookup($this->domain, 'MX', $this->dnsServer);
+        
+        // Detect email provider
+        $emailProvider = $this->detectEmailProvider($records);
+        if ($emailProvider) {
+            echo "<div class='email-provider-info'>{$emailProvider}</div>";
+        }
+        
+        if (empty($records)) {
+            echo "<p class='no-records'>No MX records found</p>";
+        } else {
+            echo "<ul class='dns-list'>";
+            foreach ($records as $record) {
+                $parts = explode(' ', $record, 2);
+                $priority = $parts[0] ?? '';
+                $server = $parts[1] ?? $record;
+                echo "<li><span class='priority'>{$priority}</span> <span class='server'>{$server}</span></li>";
+            }
+            echo "</ul>";
+        }
+        
+        // NS RECORDS (mobile)
+        $this->printSectionHeader('NS Records');
+        $records = $this->dnsLookup($this->domain, 'NS', $this->dnsServer);
+        
+        // Detect DNS provider
+        $dnsProvider = $this->detectDnsProvider($records);
+        if ($dnsProvider) {
+            echo "<div class='dns-provider-info'>{$dnsProvider}</div>";
+        }
+        
+        if (empty($records)) {
+            echo "<p class='no-records'>No NS records found</p>";
+        } else {
+            echo "<ul class='dns-list'>";
+            foreach ($records as $record) {
+                echo "<li><span class='server'>{$record}</span></li>";
+            }
+            echo "</ul>";
+        }
+        
+        echo "</div>"; // End mobile layout
     }
     
     private function analyzeEmailSecurity() {
@@ -601,6 +659,10 @@ class DomainHealthReporter {
     }
     
     private function analyzeDomainInfo() {
+        // Desktop two-column layout
+        echo "<div class='domain-info-desktop'>";
+        echo "<div class='domain-column'>";
+        
         $this->printSectionHeader('Registrar Information');
         $whois = $this->whoisLookup($this->domain);
         
@@ -617,6 +679,9 @@ class DomainHealthReporter {
             echo "<p class='no-records'>Registrar information not found</p>";
         }
         
+        echo "</div>"; // End left column
+        echo "<div class='domain-column'>";
+        
         $this->printSectionHeader('Domain Expiration');
         $expiryInfo = $this->parseExpiryDate($whois);
         if ($expiryInfo) {
@@ -627,6 +692,38 @@ class DomainHealthReporter {
         } else {
             echo "<p class='no-records'>Expiration date not found</p>";
         }
+        
+        echo "</div>"; // End right column
+        echo "</div>"; // End desktop layout
+        
+        // Mobile single-column layout
+        echo "<div class='domain-info-mobile'>";
+        
+        $this->printSectionHeader('Registrar Information');
+        if (preg_match('/Registrar:\s*(.+)/i', $whois, $matches)) {
+            $registrarRaw = trim($matches[1]);
+            $registrarFriendly = $this->detectRegistrarProvider($registrarRaw);
+            
+            if ($registrarFriendly) {
+                echo "<div class='registrar-provider-info'>Domain Registered with <span class='registrar-provider-name'>{$registrarFriendly}</span></div>";
+            }
+            
+            echo "<p class='registrar'>" . $registrarRaw . "</p>";
+        } else {
+            echo "<p class='no-records'>Registrar information not found</p>";
+        }
+        
+        $this->printSectionHeader('Domain Expiration');
+        if ($expiryInfo) {
+            echo "<p class='expiry'>";
+            echo "<span class='expiry-date'>{$expiryInfo['formatted_date']}</span> ";
+            echo "(<span class='{$expiryInfo['days_class']}'>{$expiryInfo['days_text']}</span>)";
+            echo "</p>";
+        } else {
+            echo "<p class='no-records'>Expiration date not found</p>";
+        }
+        
+        echo "</div>"; // End mobile layout
     }
     
     private function detectEmailProvider($mxRecords) {
