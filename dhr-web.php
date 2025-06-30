@@ -701,20 +701,22 @@ class DomainHealthReporter {
             echo "<div class='dmarc-record'>{$dmarc[0]}</div>";
         }
         
-        // SPF Record
+        // SPF Record  
         $this->printSectionHeader('SPF Record');
-        $spf = $this->dnsLookup($this->domain, 'TXT', $this->dnsServer);
+        $txtRecords = $this->dnsLookup($this->domain, 'TXT', $this->dnsServer);
         $spfRecord = null;
-        if (!empty($spf)) {
-            foreach ($spf as $record) {
-                if (stripos($record, 'v=spf1') === 0) {
-                    $spfRecord = $record;
+        if (!empty($txtRecords)) {
+            foreach ($txtRecords as $record) {
+                // Remove quotes and check for SPF
+                $cleanRecord = trim($record, '"');
+                if (stripos($cleanRecord, 'v=spf1') === 0) {
+                    $spfRecord = $cleanRecord;
                     break;
                 }
             }
         }
         if ($spfRecord) {
-            echo "<div class='spf-record'>{$spfRecord}</div>";
+            echo "<div class='dmarc-record'>{$spfRecord}</div>";
         } else {
             echo "<p class='no-records'>No SPF record found</p>";
         }
@@ -727,26 +729,40 @@ class DomainHealthReporter {
         foreach ($dkimSelectors as $selector) {
             $dkimRecords = $this->dnsLookup("{$selector}._domainkey.{$this->domain}", 'TXT', $this->dnsServer);
             if (!empty($dkimRecords)) {
-                $foundDkim[$selector] = $dkimRecords[0];
+                // Remove quotes from DKIM record
+                $cleanRecord = trim($dkimRecords[0], '"');
+                $foundDkim[$selector] = $cleanRecord;
             }
         }
         
         if (!empty($foundDkim)) {
             foreach ($foundDkim as $selector => $record) {
-                echo "<div class='dkim-record'><strong>{$selector}:</strong> {$record}</div>";
+                echo "<div class='dmarc-record'><strong>{$selector}:</strong> {$record}</div>";
             }
         } else {
             echo "<p class='no-records'>No DKIM records found (checked common selectors)</p>";
         }
         
-        // TXT Records (root domain only)
+        // TXT Records (root domain only) - exclude SPF record
         $this->printSectionHeader('TXT Records');
-        $txtRecords = $this->dnsLookup($this->domain, 'TXT', $this->dnsServer);
         if (empty($txtRecords)) {
             echo "<p class='no-records'>No TXT records found</p>";
         } else {
+            $nonSpfRecords = [];
             foreach ($txtRecords as $record) {
-                echo "<div class='txt-record'>{$record}</div>";
+                $cleanRecord = trim($record, '"');
+                // Exclude SPF records
+                if (stripos($cleanRecord, 'v=spf1') !== 0) {
+                    $nonSpfRecords[] = $cleanRecord;
+                }
+            }
+            
+            if (empty($nonSpfRecords)) {
+                echo "<p class='no-records'>No non-SPF TXT records found</p>";
+            } else {
+                foreach ($nonSpfRecords as $record) {
+                    echo "<div class='dmarc-record'>{$record}</div>";
+                }
             }
         }
     }
