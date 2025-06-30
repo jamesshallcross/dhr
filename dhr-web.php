@@ -1207,8 +1207,32 @@ class DomainHealthReporter {
             $method = 'Content analysis';
             
             // Try to get WordPress version from various assets
-            // Pattern 1: Oxygen cache files with ver= (most reliable WordPress indicator)
-            if (preg_match('/oxygen-cache-\d+[^?]*\?[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+            // Pattern 1: Oxygen styles CSS link (very reliable WordPress indicator)
+            if (preg_match('/oxygen-styles-css[^?]*\?[^\'">]*xlink=css[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+                $versionNum = $matches[1];
+                if (version_compare($versionNum, '3.0', '>=') && version_compare($versionNum, '8.0', '<')) {
+                    $version = $versionNum;
+                    $method = 'Oxygen styles version';
+                }
+            }
+            // Pattern 2: WordPress emoji settings (very reliable WordPress indicator)
+            elseif (preg_match('/wp-emoji-release\.min\.js\?ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+                $versionNum = $matches[1];
+                if (version_compare($versionNum, '3.0', '>=') && version_compare($versionNum, '8.0', '<')) {
+                    $version = $versionNum;
+                    $method = 'WordPress emoji version';
+                }
+            }
+            // Pattern 3: Oxygen AOS CSS (reliable WordPress indicator)
+            elseif (preg_match('/oxygen\/component-framework\/vendor\/aos\/aos\.css\?ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+                $versionNum = $matches[1];
+                if (version_compare($versionNum, '3.0', '>=') && version_compare($versionNum, '8.0', '<')) {
+                    $version = $versionNum;
+                    $method = 'Oxygen AOS version';
+                }
+            }
+            // Pattern 4: Oxygen cache files with ver= (most reliable WordPress indicator)
+            elseif (preg_match('/oxygen-cache-\d+[^?]*\?[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
                 $versionNum = $matches[1];
                 if (version_compare($versionNum, '3.0', '>=') && version_compare($versionNum, '8.0', '<')) {
                     $version = $versionNum;
