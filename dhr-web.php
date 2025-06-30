@@ -1940,6 +1940,8 @@ class DomainHealthReporter {
             .compact-table .time { font-family: monospace; font-size: 12px; }
             .dark .compact-table .time { color: #60a5fa !important; }
             .light .compact-table .time { color: #3498db !important; }
+            .dark .compact-table .ssl-expiry { color: #e0e0e0 !important; }
+            .light .compact-table .ssl-expiry { color: #333 !important; }
             .compact-table .redirect-url { font-family: monospace; font-size: 12px; }
             .dark .compact-table .redirect-url { color: #60a5fa !important; }
             .light .compact-table .redirect-url { color: #3498db !important; }
