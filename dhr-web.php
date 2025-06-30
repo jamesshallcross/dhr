@@ -692,7 +692,7 @@ class DomainHealthReporter {
     }
     
     private function analyzeGtmAnalytics() {
-        $this->printSectionHeader('GTM / Analytics');
+        $this->printSectionHeader('GTM / Analytics (work in progress / alpha)');
         
         // Get page content for analysis
         $url = "https://www.{$this->domain}";
@@ -1076,7 +1076,7 @@ class DomainHealthReporter {
             if (count($parts) >= 2) {
                 $hostname = trim($parts[1]);
                 if ($hostname === 'mx.stackmail.com.' || $hostname === 'mx.stackmail.com') {
-                    return "Email on <span class='email-provider-name'>Stackmail/20i</span>";
+                    return "Email on <span class='email-provider-name'>Stackmail / 20i</span>";
                 }
             }
         }
@@ -1277,7 +1277,7 @@ class DomainHealthReporter {
     }
     
     private function analyzeFramework() {
-        $this->printSectionHeader('Framework Detection');
+        $this->printSectionHeader('Framework Detection (beta)');
         
         $hosts = [
             "http://{$this->domain}",
@@ -1940,6 +1940,8 @@ class DomainHealthReporter {
             .compact-table .time { font-family: monospace; font-size: 12px; }
             .dark .compact-table .time { color: #60a5fa !important; }
             .light .compact-table .time { color: #3498db !important; }
+            .dark .compact-table .ssl-expiry { color: #60a5fa !important; }
+            .light .compact-table .ssl-expiry { color: #3498db !important; }
             .compact-table .redirect-url { font-family: monospace; font-size: 12px; }
             .dark .compact-table .redirect-url { color: #60a5fa !important; }
             .light .compact-table .redirect-url { color: #3498db !important; }
