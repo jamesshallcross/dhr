@@ -1206,14 +1206,31 @@ class DomainHealthReporter {
             $version = 'Unknown';
             $method = 'Content analysis';
             
-            // Try to get WordPress version from wp-includes assets
-            if (preg_match('/wp-includes.*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+            // Try to get WordPress version from various assets
+            // Pattern 1: wp-content plugins/themes with ver= parameter (most reliable for WordPress)
+            if (preg_match('/wp-content\/(?:plugins|themes)\/[^?]*\?[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+                $versionNum = $matches[1];
+                if (version_compare($versionNum, '3.0', '>=') && version_compare($versionNum, '8.0', '<')) {
+                    $version = $versionNum;
+                    $method = 'WordPress asset version';
+                }
+            }
+            // Pattern 2: Oxygen cache files with ver= (also reliable WordPress indicator)
+            elseif (preg_match('/oxygen-cache-\d+[^?]*\?[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+                $versionNum = $matches[1];
+                if (version_compare($versionNum, '3.0', '>=') && version_compare($versionNum, '8.0', '<')) {
+                    $version = $versionNum;
+                    $method = 'Oxygen cache version';
+                }
+            }
+            // Pattern 3: wp-includes assets (fallback, with stricter validation)
+            elseif (preg_match('/wp-includes.*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
                 $versionNum = $matches[1];
                 // Validate this looks like a WordPress version (not jQuery, React, etc)
-                // WordPress versions: 3.0-6.x range, typically with specific patterns
+                // WordPress versions: 3.0-7.x range, typically with specific patterns
                 // Exclude common false positives: jQuery (3.6.x, 3.7.x), React (18.x)
                 if (version_compare($versionNum, '3.0', '>=') && 
-                    version_compare($versionNum, '7.0', '<') &&
+                    version_compare($versionNum, '8.0', '<') &&
                     !preg_match('/^3\.[67]\./', $versionNum) && // Exclude jQuery 3.6.x, 3.7.x
                     !preg_match('/^18\./', $versionNum)) {     // Exclude React 18.x
                     $version = $versionNum;
@@ -1236,13 +1253,27 @@ class DomainHealthReporter {
             ];
         }
         
-        // Oxygen Builder detection
+        // Oxygen Builder detection with version extraction
         if (preg_match('/oxygen.*\.css|oxygen.*\.js|ct-section|oxy-|oxygen-body/i', $body)) {
+            $version = 'Unknown';
+            $method = 'Content analysis';
+            
+            // Try to get Oxygen version from CSS link
+            if (preg_match('/oxygen\/component-framework\/oxygen\.css\?ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+                $version = $matches[1];
+                $method = 'Oxygen CSS version';
+            }
+            // Also check for other Oxygen asset patterns
+            elseif (preg_match('/oxygen[^?]*\?[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+                $version = $matches[1];
+                $method = 'Oxygen asset version';
+            }
+            
             $frameworks[] = [
                 'name' => 'Oxygen',
-                'version' => 'Unknown',
-                'confidence' => 85,
-                'method' => 'Content analysis'
+                'version' => $version,
+                'confidence' => 90, // Higher confidence when we find specific Oxygen patterns
+                'method' => $method
             ];
         }
         
