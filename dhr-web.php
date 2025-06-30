@@ -723,8 +723,8 @@ class DomainHealthReporter {
             $gtmId = $matches[1];
             $foundAnalytics[] = [
                 'type' => 'Google Tag Manager',
-                'id' => "Container ID: {$gtmId}",
-                'method' => 'Direct snippet in &lt;head&gt;'
+                'id' => "<strong>{$gtmId}</strong>",
+                'method' => 'snippet in &lt;head&gt;'
             ];
         }
         
@@ -733,34 +733,34 @@ class DomainHealthReporter {
             $ga4Id = $matches[1];
             
             // Check if loaded via GTM
-            $loadMethod = 'Direct snippet in &lt;head&gt;';
+            $loadMethod = 'snippet in &lt;head&gt;';
             if (preg_match('/gtag\(["\']config["\'],\s*["\']' . preg_quote($ga4Id, '/') . '["\']/', $content)) {
                 // Check if there's also GTM on the page
                 if (preg_match('/GTM-[A-Z0-9]+/', $content)) {
-                    $loadMethod = 'Loaded via GTM';
+                    $loadMethod = 'via GTM';
                 }
             }
             
             $foundAnalytics[] = [
                 'type' => 'Google Analytics 4',
-                'id' => "Data Stream ID: {$ga4Id}",
+                'id' => "<strong>{$ga4Id}</strong>",
                 'method' => $loadMethod
             ];
         }
         
         // Bozboz Plausible Analytics detection
         if (preg_match('/plausible\.bozboz\.co\.uk\/js\/script\.js/i', $content)) {
-            $loadMethod = 'Direct snippet in &lt;head&gt;';
+            $loadMethod = 'snippet in &lt;head&gt;';
             
             // Check if loaded via GTM (look for GTM container loading plausible)
             if (preg_match('/GTM-[A-Z0-9]+/', $content) && 
                 !preg_match('/<script[^>]*src[^>]*plausible\.bozboz\.co\.uk/i', $content)) {
-                $loadMethod = 'Loaded via GTM';
+                $loadMethod = 'via GTM';
             }
             
             $foundAnalytics[] = [
                 'type' => 'Bozboz Plausible Analytics',
-                'id' => 'Detected',
+                'id' => '',
                 'method' => $loadMethod
             ];
         }
@@ -768,17 +768,17 @@ class DomainHealthReporter {
         // CookieYes detection
         if (preg_match('/cdn-cookieyes\.com\/client_data\/([a-f0-9]+)\/script\.js/i', $content, $matches)) {
             $cookieYesId = $matches[1];
-            $loadMethod = 'Direct snippet in &lt;head&gt;';
+            $loadMethod = 'snippet in &lt;head&gt;';
             
             // Check if loaded via GTM
             if (preg_match('/GTM-[A-Z0-9]+/', $content) && 
                 !preg_match('/<script[^>]*src[^>]*cdn-cookieyes\.com/i', $content)) {
-                $loadMethod = 'Loaded via GTM';
+                $loadMethod = 'via GTM';
             }
             
             $foundAnalytics[] = [
                 'type' => 'CookieYes',
-                'id' => "CookieYes ID: {$cookieYesId}",
+                'id' => "<strong>{$cookieYesId}</strong>",
                 'method' => $loadMethod
             ];
         }
@@ -787,18 +787,18 @@ class DomainHealthReporter {
         if (preg_match('/connect\.facebook\.net\/[^\/]+\/fbevents\.js/i', $content) || 
             preg_match('/fbq\(["\']init["\'],\s*["\'](\d+)["\']/', $content, $pixelMatches)) {
             
-            $pixelId = isset($pixelMatches[1]) ? $pixelMatches[1] : 'Unknown';
-            $loadMethod = 'Direct snippet in &lt;head&gt;';
+            $pixelId = isset($pixelMatches[1]) ? $pixelMatches[1] : '';
+            $loadMethod = 'snippet in &lt;head&gt;';
             
             // Check if loaded via GTM
             if (preg_match('/GTM-[A-Z0-9]+/', $content) && 
                 !preg_match('/<script[^>]*src[^>]*connect\.facebook\.net/i', $content)) {
-                $loadMethod = 'Loaded via GTM';
+                $loadMethod = 'via GTM';
             }
             
             $foundAnalytics[] = [
-                'type' => 'Meta Pixel (Facebook)',
-                'id' => $pixelId !== 'Unknown' ? "Pixel ID: {$pixelId}" : 'Detected',
+                'type' => 'Meta Pixel',
+                'id' => $pixelId ? "<strong>{$pixelId}</strong>" : '',
                 'method' => $loadMethod
             ];
         }
@@ -809,7 +809,22 @@ class DomainHealthReporter {
         } else {
             foreach ($foundAnalytics as $analytics) {
                 echo "<div class='dmarc-record'>";
-                echo "<strong>{$analytics['type']}</strong> - {$analytics['id']} <em>({$analytics['method']})</em>";
+                echo "<strong>{$analytics['type']}</strong> detected";
+                
+                if (!empty($analytics['id'])) {
+                    // Determine the ID label based on the type
+                    if (strpos($analytics['type'], 'Google Tag Manager') !== false) {
+                        echo " - Container ID: {$analytics['id']}";
+                    } elseif (strpos($analytics['type'], 'Google Analytics') !== false) {
+                        echo " - Data Stream ID: {$analytics['id']}";
+                    } elseif (strpos($analytics['type'], 'CookieYes') !== false) {
+                        echo " - CookieYes ID: {$analytics['id']}";
+                    } elseif (strpos($analytics['type'], 'Meta Pixel') !== false) {
+                        echo " - Pixel ID: {$analytics['id']}";
+                    }
+                }
+                
+                echo " <em>({$analytics['method']})</em>";
                 echo "</div>";
             }
         }
