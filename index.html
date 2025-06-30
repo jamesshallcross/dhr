@@ -445,6 +445,27 @@
                 display: block;
             }
         }
+        
+        /* Email security record styling */
+        .dmarc-record, .spf-record, .dkim-record, .txt-record {
+            background-color: rgba(76, 175, 80, 0.1);
+            border-left: 3px solid #4CAF50;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+        .dark .dmarc-record, .dark .spf-record, .dark .dkim-record, .dark .txt-record {
+            background-color: rgba(76, 175, 80, 0.15);
+        }
+        .no-records {
+            color: #999;
+            font-style: italic;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>

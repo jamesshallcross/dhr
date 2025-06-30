@@ -692,12 +692,62 @@ class DomainHealthReporter {
     }
     
     private function analyzeEmailSecurity() {
+        // DMARC Record
         $this->printSectionHeader('DMARC Record');
         $dmarc = $this->dnsLookup("_dmarc.{$this->domain}", 'TXT', $this->dnsServer);
         if (empty($dmarc)) {
             echo "<p class='no-records'>No DMARC record found</p>";
         } else {
             echo "<div class='dmarc-record'>{$dmarc[0]}</div>";
+        }
+        
+        // SPF Record
+        $this->printSectionHeader('SPF Record');
+        $spf = $this->dnsLookup($this->domain, 'TXT', $this->dnsServer);
+        $spfRecord = null;
+        if (!empty($spf)) {
+            foreach ($spf as $record) {
+                if (stripos($record, 'v=spf1') === 0) {
+                    $spfRecord = $record;
+                    break;
+                }
+            }
+        }
+        if ($spfRecord) {
+            echo "<div class='spf-record'>{$spfRecord}</div>";
+        } else {
+            echo "<p class='no-records'>No SPF record found</p>";
+        }
+        
+        // DKIM Records
+        $this->printSectionHeader('DKIM Records');
+        $dkimSelectors = ['bozmail', 'boz', 's1', 's2', 'google', 'selector1', 'selector2', 'k1', 'dkim', 'default', 'mail', 'dk', 'dkim1', 'dkim2'];
+        $foundDkim = [];
+        
+        foreach ($dkimSelectors as $selector) {
+            $dkimRecords = $this->dnsLookup("{$selector}._domainkey.{$this->domain}", 'TXT', $this->dnsServer);
+            if (!empty($dkimRecords)) {
+                $foundDkim[$selector] = $dkimRecords[0];
+            }
+        }
+        
+        if (!empty($foundDkim)) {
+            foreach ($foundDkim as $selector => $record) {
+                echo "<div class='dkim-record'><strong>{$selector}:</strong> {$record}</div>";
+            }
+        } else {
+            echo "<p class='no-records'>No DKIM records found (checked common selectors)</p>";
+        }
+        
+        // TXT Records (root domain only)
+        $this->printSectionHeader('TXT Records');
+        $txtRecords = $this->dnsLookup($this->domain, 'TXT', $this->dnsServer);
+        if (empty($txtRecords)) {
+            echo "<p class='no-records'>No TXT records found</p>";
+        } else {
+            foreach ($txtRecords as $record) {
+                echo "<div class='txt-record'>{$record}</div>";
+            }
         }
     }
     
