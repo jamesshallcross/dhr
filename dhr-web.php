@@ -605,7 +605,14 @@ class DomainHealthReporter {
         $whois = $this->whoisLookup($this->domain);
         
         if (preg_match('/Registrar:\s*(.+)/i', $whois, $matches)) {
-            echo "<p class='registrar'>" . trim($matches[1]) . "</p>";
+            $registrarRaw = trim($matches[1]);
+            $registrarFriendly = $this->detectRegistrarProvider($registrarRaw);
+            
+            if ($registrarFriendly) {
+                echo "<div class='registrar-provider-info'>Domain Registered with <span class='registrar-provider-name'>{$registrarFriendly}</span></div>";
+            }
+            
+            echo "<p class='registrar'>" . $registrarRaw . "</p>";
         } else {
             echo "<p class='no-records'>Registrar information not found</p>";
         }
