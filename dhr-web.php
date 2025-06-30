@@ -83,24 +83,12 @@ class DomainHealthReporter {
             "www.{$this->domain}"
         ];
         
-        // Desktop table
-        echo "<table class='compact-table'>";
-        echo "<thead><tr><th>Host</th><th>IP/CNAME</th><th>Organization</th><th>Status</th><th>CF-DC</th></tr></thead>";
-        echo "<tbody>";
-        
         $hostData = [];
         
         foreach ($hosts as $host) {
             $records = $this->dnsLookup($host, 'A', $this->dnsServer);
             
             if (empty($records)) {
-                echo "<tr>";
-                echo "<td>{$host}</td>";
-                echo "<td><span class='no-record'>No A record</span></td>";
-                echo "<td>N/A</td>";
-                echo "<td><span class='status-error'>NO_RECORD</span></td>";
-                echo "</tr>";
-                
                 $hostData[] = [
                     'host' => $host,
                     'ip_cname' => "<span class='no-record'>No A record</span>",
@@ -116,14 +104,6 @@ class DomainHealthReporter {
                 $org = $this->getOrgInfo($record);
                 $dc = $this->getDataCenter($host, $org);
                 
-                echo "<tr>";
-                echo "<td>{$host}</td>";
-                echo "<td><span class='ip'>{$record}</span></td>";
-                echo "<td><span class='org'>{$org}</span></td>";
-                echo "<td><span class='status-success'>RESOLVED</span></td>";
-                echo "<td><span class='datacenter'>{$dc}</span></td>";
-                echo "</tr>";
-                
                 $hostData[] = [
                     'host' => $host,
                     'ip_cname' => "<span class='ip'>{$record}</span>",
@@ -133,14 +113,6 @@ class DomainHealthReporter {
                 ];
             } else {
                 // CNAME record
-                echo "<tr>";
-                echo "<td>{$host}</td>";
-                echo "<td><span class='cname'>{$record}</span></td>";
-                echo "<td></td>";
-                echo "<td><span class='status-cname'>CNAME</span></td>";
-                echo "<td></td>";
-                echo "</tr>";
-                
                 $hostData[] = [
                     'host' => $host,
                     'ip_cname' => "<span class='cname'>{$record}</span>",
@@ -155,14 +127,6 @@ class DomainHealthReporter {
                     $org = $this->getOrgInfo($finalIp);
                     $dc = $this->getDataCenter($record, $org);
                     
-                    echo "<tr>";
-                    echo "<td>&nbsp;&nbsp;└─ {$record}</td>";
-                    echo "<td><span class='ip'>{$finalIp}</span></td>";
-                    echo "<td><span class='org'>{$org}</span></td>";
-                    echo "<td><span class='status-success'>RESOLVED</span></td>";
-                    echo "<td><span class='datacenter'>{$dc}</span></td>";
-                    echo "</tr>";
-                    
                     $hostData[] = [
                         'host' => "&nbsp;&nbsp;└─ {$record}",
                         'ip_cname' => "<span class='ip'>{$finalIp}</span>",
@@ -174,16 +138,38 @@ class DomainHealthReporter {
             }
         }
         
-        echo "</tbody></table>";
-        
-        // Detect hosting provider from collected organization data
+        // Detect hosting provider from collected organization data and display above table
         $hostingProvider = $this->detectHostingProvider($hostData);
         if ($hostingProvider) {
             echo "<div class='hosting-provider-info'>{$hostingProvider}</div>";
         }
         
+        // Desktop table
+        echo "<table class='compact-table'>";
+        echo "<thead><tr><th>Host</th><th>IP/CNAME</th><th>Organization</th><th>Status</th><th>CF-DC</th></tr></thead>";
+        echo "<tbody>";
+        
+        // Output the collected host data to the table
+        foreach ($hostData as $data) {
+            echo "<tr>";
+            echo "<td>{$data['host']}</td>";
+            echo "<td>{$data['ip_cname']}</td>";
+            echo "<td>" . (isset($data['org']) ? $data['org'] : '') . "</td>";
+            echo "<td>{$data['status']}</td>";
+            echo "<td>" . (isset($data['dc']) ? $data['dc'] : '') . "</td>";
+            echo "</tr>";
+        }
+        
+        echo "</tbody></table>";
+        
         // Mobile cards
         echo "<div class='host-info-mobile'>";
+        
+        // Show hosting provider info above mobile cards too
+        if ($hostingProvider) {
+            echo "<div class='hosting-provider-info'>{$hostingProvider}</div>";
+        }
+        
         foreach ($hostData as $data) {
             echo "<div class='host-card'>";
             echo "<div class='host-name'>{$data['host']}</div>";
