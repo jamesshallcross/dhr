@@ -974,6 +974,388 @@ class DomainHealthReporter {
         return null;
     }
     
+    private function analyzeFramework() {
+        $this->printSectionHeader('Framework Detection');
+        
+        $hosts = [
+            "http://{$this->domain}",
+            "https://{$this->domain}",
+            "http://www.{$this->domain}",
+            "https://www.{$this->domain}"
+        ];
+        
+        $detectedFrameworks = [];
+        
+        foreach ($hosts as $url) {
+            $frameworks = $this->detectFrameworks($url);
+            if (!empty($frameworks)) {
+                $detectedFrameworks = array_merge($detectedFrameworks, $frameworks);
+                break; // Found working URL, stop trying others
+            }
+        }
+        
+        if (empty($detectedFrameworks)) {
+            echo "<div class='no-records'>No frameworks detected or site unavailable</div>";
+            return;
+        }
+        
+        // Remove duplicates and sort by confidence
+        $uniqueFrameworks = [];
+        foreach ($detectedFrameworks as $framework) {
+            $key = $framework['name'] . '_' . $framework['version'];
+            if (!isset($uniqueFrameworks[$key]) || $uniqueFrameworks[$key]['confidence'] < $framework['confidence']) {
+                $uniqueFrameworks[$key] = $framework;
+            }
+        }
+        
+        usort($uniqueFrameworks, function($a, $b) {
+            return $b['confidence'] - $a['confidence'];
+        });
+        
+        // Desktop table
+        echo "<table class='compact-table'>";
+        echo "<thead><tr><th>Framework/Technology</th><th>Version</th><th>Confidence</th><th>Detection Method</th></tr></thead>";
+        echo "<tbody>";
+        
+        $frameworkData = [];
+        
+        foreach ($uniqueFrameworks as $framework) {
+            $confidenceClass = '';
+            if ($framework['confidence'] >= 90) $confidenceClass = 'status-success';
+            elseif ($framework['confidence'] >= 70) $confidenceClass = 'status-redirect';
+            else $confidenceClass = 'status-error';
+            
+            echo "<tr>";
+            echo "<td><span class='framework-name'>{$framework['name']}</span></td>";
+            echo "<td><span class='framework-version'>{$framework['version']}</span></td>";
+            echo "<td><span class='{$confidenceClass}'>{$framework['confidence']}%</span></td>";
+            echo "<td><span class='detection-method'>{$framework['method']}</span></td>";
+            echo "</tr>";
+            
+            $frameworkData[] = [
+                'name' => "<span class='framework-name'>{$framework['name']}</span>",
+                'version' => "<span class='framework-version'>{$framework['version']}</span>",
+                'confidence' => "<span class='{$confidenceClass}'>{$framework['confidence']}%</span>",
+                'method' => "<span class='detection-method'>{$framework['method']}</span>"
+            ];
+        }
+        
+        echo "</tbody></table>";
+        
+        // Mobile cards
+        echo "<div class='framework-info-mobile'>";
+        foreach ($frameworkData as $data) {
+            echo "<div class='framework-card'>";
+            echo "<div class='framework-name-header'>{$data['name']}</div>";
+            echo "<div class='framework-detail'><strong>Version:</strong> {$data['version']}</div>";
+            echo "<div class='framework-detail'><strong>Confidence:</strong> {$data['confidence']}</div>";
+            echo "<div class='framework-detail'><strong>Method:</strong> {$data['method']}</div>";
+            echo "</div>";
+        }
+        echo "</div>";
+    }
+    
+    private function detectFrameworks($url) {
+        $frameworks = [];
+        
+        // Get HTTP response with headers and body
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+        ]);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        curl_close($ch);
+        
+        if ($httpCode !== 200 || !$response) {
+            return [];
+        }
+        
+        $headers = substr($response, 0, $headerSize);
+        $body = substr($response, $headerSize);
+        
+        // Analyze HTTP headers
+        $frameworks = array_merge($frameworks, $this->analyzeHeaders($headers));
+        
+        // Analyze HTML content
+        $frameworks = array_merge($frameworks, $this->analyzeHtmlContent($body));
+        
+        // Analyze JavaScript and CSS paths
+        $frameworks = array_merge($frameworks, $this->analyzeAssetPaths($body));
+        
+        // Analyze meta tags
+        $frameworks = array_merge($frameworks, $this->analyzeMetaTags($body));
+        
+        return $frameworks;
+    }
+    
+    private function analyzeHeaders($headers) {
+        $frameworks = [];
+        $headerLines = explode("\n", $headers);
+        
+        foreach ($headerLines as $line) {
+            $line = trim($line);
+            
+            // X-Powered-By header
+            if (preg_match('/X-Powered-By:\s*(.+)/i', $line, $matches)) {
+                $poweredBy = trim($matches[1]);
+                
+                if (preg_match('/PHP\/(\d+\.\d+\.\d+)/i', $poweredBy, $phpMatches)) {
+                    $frameworks[] = [
+                        'name' => 'PHP',
+                        'version' => $phpMatches[1],
+                        'confidence' => 95,
+                        'method' => 'X-Powered-By header'
+                    ];
+                }
+                
+                if (preg_match('/ASP\.NET/i', $poweredBy)) {
+                    $frameworks[] = [
+                        'name' => 'ASP.NET',
+                        'version' => 'Unknown',
+                        'confidence' => 95,
+                        'method' => 'X-Powered-By header'
+                    ];
+                }
+            }
+            
+            // Server header
+            if (preg_match('/Server:\s*(.+)/i', $line, $matches)) {
+                $server = trim($matches[1]);
+                
+                if (preg_match('/Apache\/(\d+\.\d+\.\d+)/i', $server, $apacheMatches)) {
+                    $frameworks[] = [
+                        'name' => 'Apache',
+                        'version' => $apacheMatches[1],
+                        'confidence' => 90,
+                        'method' => 'Server header'
+                    ];
+                }
+                
+                if (preg_match('/nginx\/(\d+\.\d+\.\d+)/i', $server, $nginxMatches)) {
+                    $frameworks[] = [
+                        'name' => 'Nginx',
+                        'version' => $nginxMatches[1],
+                        'confidence' => 90,
+                        'method' => 'Server header'
+                    ];
+                }
+            }
+            
+            // X-Generator header
+            if (preg_match('/X-Generator:\s*(.+)/i', $line, $matches)) {
+                $generator = trim($matches[1]);
+                $frameworks[] = [
+                    'name' => $generator,
+                    'version' => 'Unknown',
+                    'confidence' => 85,
+                    'method' => 'X-Generator header'
+                ];
+            }
+        }
+        
+        return $frameworks;
+    }
+    
+    private function analyzeHtmlContent($body) {
+        $frameworks = [];
+        
+        // WordPress detection
+        if (preg_match('/wp-content|wp-includes|wp-admin/i', $body)) {
+            $version = 'Unknown';
+            if (preg_match('/wp-includes\/js\/.*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+                $version = $matches[1];
+            }
+            $frameworks[] = [
+                'name' => 'WordPress',
+                'version' => $version,
+                'confidence' => 90,
+                'method' => 'Content analysis'
+            ];
+        }
+        
+        // React detection
+        if (preg_match('/react/i', $body) && preg_match('/data-react|__REACT_|ReactDOM/i', $body)) {
+            $frameworks[] = [
+                'name' => 'React',
+                'version' => 'Unknown',
+                'confidence' => 80,
+                'method' => 'JavaScript analysis'
+            ];
+        }
+        
+        // Angular detection
+        if (preg_match('/ng-|angular|AngularJS/i', $body)) {
+            $frameworks[] = [
+                'name' => 'Angular',
+                'version' => 'Unknown',
+                'confidence' => 80,
+                'method' => 'JavaScript analysis'
+            ];
+        }
+        
+        // Vue.js detection
+        if (preg_match('/vue|v-if|v-for|v-show/i', $body)) {
+            $frameworks[] = [
+                'name' => 'Vue.js',
+                'version' => 'Unknown',
+                'confidence' => 75,
+                'method' => 'JavaScript analysis'
+            ];
+        }
+        
+        // Drupal detection
+        if (preg_match('/sites\/default\/files|Drupal\.settings/i', $body)) {
+            $frameworks[] = [
+                'name' => 'Drupal',
+                'version' => 'Unknown',
+                'confidence' => 85,
+                'method' => 'Content analysis'
+            ];
+        }
+        
+        // Joomla detection
+        if (preg_match('/\/components\/com_|Joomla!/i', $body)) {
+            $frameworks[] = [
+                'name' => 'Joomla',
+                'version' => 'Unknown',
+                'confidence' => 85,
+                'method' => 'Content analysis'
+            ];
+        }
+        
+        // Shopify detection
+        if (preg_match('/cdn\.shopify\.com|Shopify\.theme/i', $body)) {
+            $frameworks[] = [
+                'name' => 'Shopify',
+                'version' => 'Unknown',
+                'confidence' => 90,
+                'method' => 'CDN analysis'
+            ];
+        }
+        
+        // WooCommerce detection
+        if (preg_match('/woocommerce|wc-|cart_hash/i', $body)) {
+            $frameworks[] = [
+                'name' => 'WooCommerce',
+                'version' => 'Unknown',
+                'confidence' => 85,
+                'method' => 'Content analysis'
+            ];
+        }
+        
+        return $frameworks;
+    }
+    
+    private function analyzeAssetPaths($body) {
+        $frameworks = [];
+        
+        // Laravel detection
+        if (preg_match('/\/mix-manifest\.json|\/app\.js|\/app\.css/i', $body)) {
+            $frameworks[] = [
+                'name' => 'Laravel',
+                'version' => 'Unknown',
+                'confidence' => 75,
+                'method' => 'Asset path analysis'
+            ];
+        }
+        
+        // Next.js detection
+        if (preg_match('/_next\/static/i', $body)) {
+            $frameworks[] = [
+                'name' => 'Next.js',
+                'version' => 'Unknown',
+                'confidence' => 85,
+                'method' => 'Asset path analysis'
+            ];
+        }
+        
+        // Nuxt.js detection
+        if (preg_match('/_nuxt\//i', $body)) {
+            $frameworks[] = [
+                'name' => 'Nuxt.js',
+                'version' => 'Unknown',
+                'confidence' => 85,
+                'method' => 'Asset path analysis'
+            ];
+        }
+        
+        // Bootstrap detection
+        if (preg_match('/bootstrap\.(?:min\.)?(?:css|js)/i', $body)) {
+            $version = 'Unknown';
+            if (preg_match('/bootstrap[\/-](\d+\.\d+\.?\d*)/i', $body, $matches)) {
+                $version = $matches[1];
+            }
+            $frameworks[] = [
+                'name' => 'Bootstrap',
+                'version' => $version,
+                'confidence' => 80,
+                'method' => 'CSS framework analysis'
+            ];
+        }
+        
+        // jQuery detection
+        if (preg_match('/jquery[\.-](\d+\.\d+\.?\d*)/i', $body, $matches)) {
+            $frameworks[] = [
+                'name' => 'jQuery',
+                'version' => $matches[1],
+                'confidence' => 85,
+                'method' => 'JavaScript library analysis'
+            ];
+        } elseif (preg_match('/jquery/i', $body)) {
+            $frameworks[] = [
+                'name' => 'jQuery',
+                'version' => 'Unknown',
+                'confidence' => 70,
+                'method' => 'JavaScript library analysis'
+            ];
+        }
+        
+        return $frameworks;
+    }
+    
+    private function analyzeMetaTags($body) {
+        $frameworks = [];
+        
+        // Generator meta tag
+        if (preg_match('/<meta[^>]+name=["\']generator["\'][^>]+content=["\']([^"\'>]+)["\'][^>]*>/i', $body, $matches)) {
+            $generator = trim($matches[1]);
+            
+            if (preg_match('/WordPress\s+(\d+\.\d+\.?\d*)/i', $generator, $wpMatches)) {
+                $frameworks[] = [
+                    'name' => 'WordPress',
+                    'version' => $wpMatches[1],
+                    'confidence' => 95,
+                    'method' => 'Meta generator tag'
+                ];
+            } elseif (preg_match('/Drupal\s+(\d+)/i', $generator, $drupalMatches)) {
+                $frameworks[] = [
+                    'name' => 'Drupal',
+                    'version' => $drupalMatches[1],
+                    'confidence' => 95,
+                    'method' => 'Meta generator tag'
+                ];
+            } else {
+                $frameworks[] = [
+                    'name' => $generator,
+                    'version' => 'Unknown',
+                    'confidence' => 85,
+                    'method' => 'Meta generator tag'
+                ];
+            }
+        }
+        
+        return $frameworks;
+    }
+    
     public function analyze() {
         echo "
         <style>
@@ -1077,11 +1459,29 @@ class DomainHealthReporter {
                 .light .ssl-card .ssl-warning { color: #f39c12 !important; }
                 .dark .ssl-card .ssl-error { color: #f87171 !important; }
                 .light .ssl-card .ssl-error { color: #e74c3c !important; }
+                
+                /* Mobile card layout for Framework Detection */
+                .framework-info-mobile { display: block; }
+                .framework-card { border-radius: 5px; margin: 8px 0; padding: 10px; transition: background-color 0.3s; }
+                .dark .framework-card { background: #3d3d3d; border: 1px solid #555; }
+                .light .framework-card { background: #f9f9f9; border: 1px solid #ddd; }
+                .framework-card .framework-name-header { font-weight: bold; font-size: 13px; margin-bottom: 5px; }
+                .framework-card .framework-detail { font-size: 11px; margin: 3px 0; }
+                .framework-card .framework-detail strong { min-width: 80px; display: inline-block; }
+                
+                /* Color coding for mobile framework cards */
+                .dark .framework-card .framework-name { color: #4ade80 !important; font-weight: bold; }
+                .light .framework-card .framework-name { color: #27ae60 !important; font-weight: bold; }
+                .dark .framework-card .framework-version { color: #60a5fa !important; }
+                .light .framework-card .framework-version { color: #3498db !important; }
+                .dark .framework-card .detection-method { color: #a78bfa !important; }
+                .light .framework-card .detection-method { color: #8e44ad !important; }
             }
             @media (min-width: 769px) {
                 .host-info-mobile { display: none; }
                 .redirect-info-mobile { display: none; }
                 .ssl-info-mobile { display: none; }
+                .framework-info-mobile { display: none; }
             }
             .dark .compact-table { background: #2d2d2d; }
             .light .compact-table { background: white; }
@@ -1149,6 +1549,15 @@ class DomainHealthReporter {
             .no-records { font-style: italic; font-size: 12px; margin: 5px 0; }
             .dark .no-records { color: #9ca3af; }
             .light .no-records { color: #666; }
+            .framework-name { font-weight: bold; font-size: 13px; }
+            .dark .framework-name { color: #4ade80; }
+            .light .framework-name { color: #27ae60; }
+            .framework-version { font-family: monospace; font-size: 12px; }
+            .dark .framework-version { color: #60a5fa; }
+            .light .framework-version { color: #3498db; }
+            .detection-method { font-size: 12px; }
+            .dark .detection-method { color: #a78bfa; }
+            .light .detection-method { color: #8e44ad; }
             h4 { padding-bottom: 2px; margin: 15px 0 8px 0; font-size: 16px; transition: all 0.3s; }
             .dark h4 { color: #60a5fa; border-bottom: 1px solid #60a5fa; }
             .light h4 { color: #2c3e50; border-bottom: 1px solid #3498db; }
@@ -1165,6 +1574,7 @@ class DomainHealthReporter {
         $this->analyzeSSLCertificate();
         $this->analyzeDnsRecords();
         $this->analyzeDomainInfo();
+        $this->analyzeFramework();
         $this->analyzeEmailSecurity();
     }
 }
