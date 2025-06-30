@@ -1182,32 +1182,32 @@ class DomainHealthReporter {
             ];
         }
         
-        // React detection
-        if (preg_match('/react/i', $body) && preg_match('/data-react|__REACT_|ReactDOM/i', $body)) {
+        // React detection - more specific patterns
+        if (preg_match('/data-reactroot|__REACT_DEVTOOLS__|ReactDOM\.render|react\.production\.min\.js|react\.development\.js/i', $body)) {
             $frameworks[] = [
                 'name' => 'React',
                 'version' => 'Unknown',
-                'confidence' => 80,
+                'confidence' => 85,
                 'method' => 'JavaScript analysis'
             ];
         }
         
-        // Angular detection
-        if (preg_match('/ng-|angular|AngularJS/i', $body)) {
+        // Angular detection - more specific patterns
+        if (preg_match('/ng-app|ng-controller|ng-version|angular\.min\.js|angular\.js|@angular\/core/i', $body)) {
             $frameworks[] = [
                 'name' => 'Angular',
                 'version' => 'Unknown',
-                'confidence' => 80,
+                'confidence' => 85,
                 'method' => 'JavaScript analysis'
             ];
         }
         
-        // Vue.js detection
-        if (preg_match('/vue|v-if|v-for|v-show/i', $body)) {
+        // Vue.js detection - more specific patterns
+        if (preg_match('/vue\.min\.js|vue\.js|v-if=|v-for=|v-show=|__VUE__|Vue\.component/i', $body)) {
             $frameworks[] = [
                 'name' => 'Vue.js',
                 'version' => 'Unknown',
-                'confidence' => 75,
+                'confidence' => 85,
                 'method' => 'JavaScript analysis'
             ];
         }
@@ -1242,8 +1242,8 @@ class DomainHealthReporter {
             ];
         }
         
-        // WooCommerce detection
-        if (preg_match('/woocommerce|wc-|cart_hash/i', $body)) {
+        // WooCommerce detection - more specific patterns
+        if (preg_match('/woocommerce.*\.css|woocommerce.*\.js|wc-ajax|woocommerce-page|shop_table|woocommerce-cart|woocommerce-checkout/i', $body)) {
             $frameworks[] = [
                 'name' => 'WooCommerce',
                 'version' => 'Unknown',
@@ -1258,13 +1258,13 @@ class DomainHealthReporter {
     private function analyzeAssetPaths($body) {
         $frameworks = [];
         
-        // Laravel detection
-        if (preg_match('/\/mix-manifest\.json|\/app\.js|\/app\.css/i', $body)) {
+        // Laravel detection - more specific patterns
+        if (preg_match('/mix-manifest\.json|laravel_session|_token|csrf-token|Laravel\s+v\d/i', $body)) {
             $frameworks[] = [
                 'name' => 'Laravel',
                 'version' => 'Unknown',
-                'confidence' => 75,
-                'method' => 'Asset path analysis'
+                'confidence' => 85,
+                'method' => 'Framework analysis'
             ];
         }
         
@@ -1302,19 +1302,19 @@ class DomainHealthReporter {
             ];
         }
         
-        // jQuery detection
+        // jQuery detection - more specific patterns
         if (preg_match('/jquery[\.-](\d+\.\d+\.?\d*)/i', $body, $matches)) {
             $frameworks[] = [
                 'name' => 'jQuery',
                 'version' => $matches[1],
-                'confidence' => 85,
+                'confidence' => 90,
                 'method' => 'JavaScript library analysis'
             ];
-        } elseif (preg_match('/jquery/i', $body)) {
+        } elseif (preg_match('/jquery\.min\.js|jquery\.js|\$\(document\)\.ready|\$\(function/i', $body)) {
             $frameworks[] = [
                 'name' => 'jQuery',
                 'version' => 'Unknown',
-                'confidence' => 70,
+                'confidence' => 80,
                 'method' => 'JavaScript library analysis'
             ];
         }
