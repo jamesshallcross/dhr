@@ -857,12 +857,39 @@ class DomainHealthReporter {
         if ($spfRecord) {
             // Split SPF record on spaces for easier reading
             $spfParts = explode(' ', $spfRecord);
+            
+            // Separate parts into categories for sorting
+            $versionParts = [];
+            $ip4Parts = [];
+            $includeParts = [];
+            $otherParts = [];
+            
+            foreach ($spfParts as $part) {
+                $trimmedPart = trim($part);
+                if (stripos($trimmedPart, 'v=spf') === 0) {
+                    $versionParts[] = $trimmedPart;
+                } elseif (stripos($trimmedPart, 'ip4:') === 0) {
+                    $ip4Parts[] = $trimmedPart;
+                } elseif (stripos($trimmedPart, 'include:') === 0) {
+                    $includeParts[] = $trimmedPart;
+                } else {
+                    $otherParts[] = $trimmedPart;
+                }
+            }
+            
+            // Sort ip4 and include parts alphabetically
+            sort($ip4Parts, SORT_STRING | SORT_FLAG_CASE);
+            sort($includeParts, SORT_STRING | SORT_FLAG_CASE);
+            
+            // Combine in order: version, ip4 (sorted), include (sorted), others
+            $sortedParts = array_merge($versionParts, $ip4Parts, $includeParts, $otherParts);
+            
             echo "<div class='dmarc-record'>";
-            foreach ($spfParts as $index => $part) {
+            foreach ($sortedParts as $index => $part) {
                 if ($index > 0) {
                     echo "<br>";
                 }
-                echo htmlspecialchars(trim($part));
+                echo htmlspecialchars($part);
             }
             echo "</div>";
         } else {
