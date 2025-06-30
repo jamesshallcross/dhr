@@ -694,8 +694,202 @@ class DomainHealthReporter {
     private function analyzeGtmAnalytics() {
         $this->printSectionHeader('GTM / Analytics');
         
-        // Get page content for analysis
         $url = "https://www.{$this->domain}";
+        
+        // Try headless browser detection first
+        $headlessResults = $this->detectAnalyticsWithHeadless($url);
+        if ($headlessResults !== false) {
+            $foundAnalytics = $headlessResults;
+        } else {
+            // Fallback to static analysis
+            $foundAnalytics = $this->detectAnalyticsStatic($url);
+        }
+        
+        // Display results
+        if (empty($foundAnalytics)) {
+            echo "<p class='no-records'>No analytics tools detected</p>";
+        } else {
+            foreach ($foundAnalytics as $analytics) {
+                echo "<div class='dmarc-record'>";
+                echo "<strong>{$analytics['type']}</strong> detected";
+                
+                if (!empty($analytics['id'])) {
+                    // Determine the ID label based on the type
+                    if (strpos($analytics['type'], 'Google Tag Manager') !== false) {
+                        echo " - Container ID: {$analytics['id']}";
+                    } elseif (strpos($analytics['type'], 'Google Analytics') !== false) {
+                        echo " - Data Stream ID: {$analytics['id']}";
+                    } elseif (strpos($analytics['type'], 'CookieYes') !== false) {
+                        echo " - CookieYes ID: {$analytics['id']}";
+                    } elseif (strpos($analytics['type'], 'Meta Pixel') !== false) {
+                        echo " - Pixel ID: {$analytics['id']}";
+                    }
+                }
+                
+                echo " <em>({$analytics['method']})</em>";
+                echo "</div>";
+            }
+        }
+    }
+    
+    private function detectAnalyticsWithHeadless($url) {
+        // Check if Chrome/Chromium is available
+        $chromeCmd = $this->findChrome();
+        if (!$chromeCmd) {
+            return false; // Fall back to static analysis
+        }
+        
+        // Create temporary files for Chrome output
+        $tempDir = sys_get_temp_dir();
+        $networkLogFile = $tempDir . '/chrome_network_' . uniqid() . '.log';
+        $consoleLogFile = $tempDir . '/chrome_console_' . uniqid() . '.log';
+        
+        // Chrome command with network logging
+        $cmd = "{$chromeCmd} " .
+               "--headless --disable-gpu --disable-web-security --disable-features=VizDisplayCompositor " .
+               "--enable-logging --log-level=0 " .
+               "--enable-network-service-logging " .
+               "--dump-dom " .
+               "--virtual-time-budget=5000 " . // Wait 5 seconds for GTM to load
+               "--run-all-compositor-stages-before-draw " .
+               "--timeout=10000 " .
+               "'{$url}' 2>{$networkLogFile}";
+        
+        // Execute Chrome headless
+        $output = shell_exec($cmd);
+        
+        // Read network log
+        $networkLog = file_exists($networkLogFile) ? file_get_contents($networkLogFile) : '';
+        
+        // Clean up temp files
+        if (file_exists($networkLogFile)) unlink($networkLogFile);
+        if (file_exists($consoleLogFile)) unlink($consoleLogFile);
+        
+        if (!$output && !$networkLog) {
+            return false; // Headless failed
+        }
+        
+        $foundAnalytics = [];
+        
+        // Analyze the output and network requests
+        $combinedContent = $output . "\n" . $networkLog;
+        
+        // GTM Detection
+        if (preg_match('/googletagmanager\.com\/gtm\.js\?id=(GTM-[A-Z0-9]+)/i', $combinedContent, $matches) ||
+            preg_match('/[\'\"](GTM-[A-Z0-9]+)[\'\"]\s*\)[^<]*<\/script>/i', $combinedContent, $matches)) {
+            $gtmId = $matches[1];
+            $foundAnalytics[] = [
+                'type' => 'Google Tag Manager',
+                'id' => "<strong>{$gtmId}</strong>",
+                'method' => 'snippet in &lt;head&gt;'
+            ];
+        }
+        
+        // GA4 Detection (including GTM-loaded)
+        if (preg_match('/googletagmanager\.com\/gtag\/js\?id=(G-[A-Z0-9]+)/i', $combinedContent, $matches) ||
+            preg_match('/google-analytics\.com\/analytics\.js.*[&?]tid=(G-[A-Z0-9]+)/i', $combinedContent, $matches) ||
+            preg_match('/gtag\(["\']config["\'],\s*["\']([G-][A-Z0-9]+)["\']/', $combinedContent, $matches)) {
+            
+            $ga4Id = $matches[1];
+            
+            // Determine load method
+            $loadMethod = 'snippet in &lt;head&gt;';
+            if (preg_match('/GTM-[A-Z0-9]+/', $combinedContent) && 
+                !preg_match('/<script[^>]*src[^>]*googletagmanager\.com\/gtag/i', $output)) {
+                $loadMethod = 'via GTM';
+            }
+            
+            $foundAnalytics[] = [
+                'type' => 'Google Analytics 4',
+                'id' => "<strong>{$ga4Id}</strong>",
+                'method' => $loadMethod
+            ];
+        }
+        
+        // Bozboz Plausible Detection (including GTM-loaded)
+        if (preg_match('/plausible\.bozboz\.co\.uk\/js\/script\.js/i', $combinedContent)) {
+            $loadMethod = 'snippet in &lt;head&gt;';
+            if (preg_match('/GTM-[A-Z0-9]+/', $combinedContent) && 
+                !preg_match('/<script[^>]*src[^>]*plausible\.bozboz\.co\.uk/i', $output)) {
+                $loadMethod = 'via GTM';
+            }
+            
+            $foundAnalytics[] = [
+                'type' => 'Bozboz Plausible Analytics',
+                'id' => '',
+                'method' => $loadMethod
+            ];
+        }
+        
+        // CookieYes Detection (including GTM-loaded)
+        if (preg_match('/cdn-cookieyes\.com\/client_data\/([a-f0-9]+)\/script\.js/i', $combinedContent, $matches)) {
+            $cookieYesId = $matches[1];
+            $loadMethod = 'snippet in &lt;head&gt;';
+            if (preg_match('/GTM-[A-Z0-9]+/', $combinedContent) && 
+                !preg_match('/<script[^>]*src[^>]*cdn-cookieyes\.com/i', $output)) {
+                $loadMethod = 'via GTM';
+            }
+            
+            $foundAnalytics[] = [
+                'type' => 'CookieYes',
+                'id' => "<strong>{$cookieYesId}</strong>",
+                'method' => $loadMethod
+            ];
+        }
+        
+        // Meta Pixel Detection (including GTM-loaded)
+        if (preg_match('/connect\.facebook\.net\/[^\/]+\/fbevents\.js/i', $combinedContent) || 
+            preg_match('/fbq\(["\']init["\'],\s*["\'](\d+)["\']/', $combinedContent, $pixelMatches)) {
+            
+            $pixelId = isset($pixelMatches[1]) ? $pixelMatches[1] : '';
+            $loadMethod = 'snippet in &lt;head&gt;';
+            if (preg_match('/GTM-[A-Z0-9]+/', $combinedContent) && 
+                !preg_match('/<script[^>]*src[^>]*connect\.facebook\.net/i', $output)) {
+                $loadMethod = 'via GTM';
+            }
+            
+            $foundAnalytics[] = [
+                'type' => 'Meta Pixel',
+                'id' => $pixelId ? "<strong>{$pixelId}</strong>" : '',
+                'method' => $loadMethod
+            ];
+        }
+        
+        return $foundAnalytics;
+    }
+    
+    private function findChrome() {
+        // Common Chrome/Chromium paths
+        $chromePaths = [
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-stable',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser',
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            '/Applications/Chromium.app/Contents/MacOS/Chromium',
+            'google-chrome',
+            'chromium',
+            'chrome'
+        ];
+        
+        foreach ($chromePaths as $path) {
+            $output = shell_exec("which '{$path}' 2>/dev/null");
+            if (!empty(trim($output))) {
+                return $path;
+            }
+            
+            // Also try direct execution test
+            $test = shell_exec("'{$path}' --version 2>/dev/null");
+            if (!empty($test) && preg_match('/Chrome|Chromium/i', $test)) {
+                return $path;
+            }
+        }
+        
+        return false;
+    }
+    
+    private function detectAnalyticsStatic($url) {
+        // Fallback: Original static analysis
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
@@ -711,8 +905,7 @@ class DomainHealthReporter {
         curl_close($ch);
         
         if ($httpCode !== 200 || !$content) {
-            echo "<p class='no-records'>Unable to analyze page content for analytics detection</p>";
-            return;
+            return []; // Return empty array instead of showing error
         }
         
         $foundAnalytics = [];
@@ -803,31 +996,7 @@ class DomainHealthReporter {
             ];
         }
         
-        // Display results
-        if (empty($foundAnalytics)) {
-            echo "<p class='no-records'>No analytics tools detected</p>";
-        } else {
-            foreach ($foundAnalytics as $analytics) {
-                echo "<div class='dmarc-record'>";
-                echo "<strong>{$analytics['type']}</strong> detected";
-                
-                if (!empty($analytics['id'])) {
-                    // Determine the ID label based on the type
-                    if (strpos($analytics['type'], 'Google Tag Manager') !== false) {
-                        echo " - Container ID: {$analytics['id']}";
-                    } elseif (strpos($analytics['type'], 'Google Analytics') !== false) {
-                        echo " - Data Stream ID: {$analytics['id']}";
-                    } elseif (strpos($analytics['type'], 'CookieYes') !== false) {
-                        echo " - CookieYes ID: {$analytics['id']}";
-                    } elseif (strpos($analytics['type'], 'Meta Pixel') !== false) {
-                        echo " - Pixel ID: {$analytics['id']}";
-                    }
-                }
-                
-                echo " <em>({$analytics['method']})</em>";
-                echo "</div>";
-            }
-        }
+        return $foundAnalytics;
     }
     
     private function analyzeEmailSecurity() {
