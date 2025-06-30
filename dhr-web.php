@@ -650,7 +650,7 @@ class DomainHealthReporter {
         
         // If we found multiple Google MX records, it's likely Google Workspace
         if (count($foundGoogleMx) >= 3) {
-            return "Email by <span class='email-provider-name'>Google Workspace</span>";
+            return "Email on <span class='email-provider-name'>Google Workspace</span>";
         }
         
         // Check for Microsoft 365 pattern
@@ -659,7 +659,7 @@ class DomainHealthReporter {
             if (count($parts) >= 2) {
                 $hostname = trim($parts[1]);
                 if (preg_match('/\.mail\.protection\.outlook\.com\.?$/', $hostname)) {
-                    return "Email by <span class='email-provider-name'>Microsoft 365</span>";
+                    return "Email on <span class='email-provider-name'>Microsoft 365</span>";
                 }
             }
         }
@@ -670,7 +670,7 @@ class DomainHealthReporter {
             if (count($parts) >= 2) {
                 $hostname = trim($parts[1]);
                 if ($hostname === 'mx.stackmail.com.' || $hostname === 'mx.stackmail.com') {
-                    return "Email by <span class='email-provider-name'>Stackmail/20i</span>";
+                    return "Email on <span class='email-provider-name'>Stackmail/20i</span>";
                 }
             }
         }
