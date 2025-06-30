@@ -685,6 +685,28 @@ class DomainHealthReporter {
         return null;
     }
     
+    private function detectRegistrarProvider($registrarText) {
+        $registrarLower = strtolower($registrarText);
+        
+        if (strpos($registrarLower, 'bozboz') !== false) {
+            return 'Bozboz';
+        }
+        
+        if (strpos($registrarLower, 'godaddy') !== false) {
+            return 'GoDaddy';
+        }
+        
+        if (strpos($registrarLower, 'cloudflare') !== false) {
+            return 'Cloudflare';
+        }
+        
+        if (strpos($registrarLower, 'enom') !== false) {
+            return '123-REG ?';
+        }
+        
+        return null;
+    }
+    
     private function getDataCenter($host, $org) {
         // Only check for data center if organization suggests Cloudflare/Shopify/WPEngine
         if (!preg_match('/cloudflare|shopify|wpengine/i', $org)) {
