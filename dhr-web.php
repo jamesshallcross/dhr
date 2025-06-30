@@ -1207,24 +1207,23 @@ class DomainHealthReporter {
             $method = 'Content analysis';
             
             // Try to get WordPress version from various assets
-            // Pattern 1: wp-content plugins/themes with ver= parameter (most reliable for WordPress)
-            // Exclude Oxygen plugin paths as they contain Oxygen version, not WordPress version
-            if (preg_match('/wp-content\/(?:plugins|themes)\/(?!oxygen\/)[^?]*\?[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
-                $versionNum = $matches[1];
-                // WordPress versions are typically 3.0-7.x, exclude Oxygen versions (4.x range)
-                if (version_compare($versionNum, '3.0', '>=') && 
-                    version_compare($versionNum, '8.0', '<') &&
-                    !preg_match('/^4\.[89]\./', $versionNum)) { // Exclude Oxygen 4.8.x, 4.9.x versions
-                    $version = $versionNum;
-                    $method = 'WordPress asset version';
-                }
-            }
-            // Pattern 2: Oxygen cache files with ver= (also reliable WordPress indicator)
-            elseif (preg_match('/oxygen-cache-\d+[^?]*\?[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+            // Pattern 1: Oxygen cache files with ver= (most reliable WordPress indicator)
+            if (preg_match('/oxygen-cache-\d+[^?]*\?[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
                 $versionNum = $matches[1];
                 if (version_compare($versionNum, '3.0', '>=') && version_compare($versionNum, '8.0', '<')) {
                     $version = $versionNum;
                     $method = 'Oxygen cache version';
+                }
+            }
+            // Pattern 2: WordPress core styles/scripts (very specific WordPress core assets)
+            elseif (preg_match('/wp-(?:admin|includes)\/(?:css|js)\/[^?]*\?[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+                $versionNum = $matches[1];
+                // WordPress versions are typically 5.0+ currently, exclude plugin versions
+                if (version_compare($versionNum, '5.0', '>=') && 
+                    version_compare($versionNum, '8.0', '<') &&
+                    !preg_match('/^[34]\./', $versionNum)) { // Exclude 3.x and 4.x versions (likely plugins)
+                    $version = $versionNum;
+                    $method = 'WordPress core asset';
                 }
             }
             // Pattern 3: wp-includes assets (fallback, with stricter validation)
