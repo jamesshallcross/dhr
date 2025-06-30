@@ -1672,14 +1672,20 @@ class DomainHealthReporter {
     private function analyzeAssetPaths($body) {
         $frameworks = [];
         
-        // Laravel detection - more specific patterns
-        if (preg_match('/mix-manifest\.json|laravel_session|_token|csrf-token|Laravel\s+v\d/i', $body)) {
-            $frameworks[] = [
-                'name' => 'Laravel',
-                'version' => 'Unknown',
-                'confidence' => 85,
-                'method' => 'Framework analysis'
-            ];
+        // Laravel detection - more specific patterns, exclude Shopify
+        if (preg_match('/mix-manifest\.json|laravel_session|Laravel\s+v\d/i', $body) ||
+            (preg_match('/csrf-token|_token/i', $body) && !preg_match('/shopify|myshopify/i', $body))) {
+            
+            // Additional check: Laravel typically has specific asset patterns
+            if (preg_match('/\/js\/app\.js|\/css\/app\.css|mix-manifest|laravel_session/i', $body) ||
+                preg_match('/Laravel\s+v\d|laravel\.com/i', $body)) {
+                $frameworks[] = [
+                    'name' => 'Laravel',
+                    'version' => 'Unknown',
+                    'confidence' => 85,
+                    'method' => 'Framework analysis'
+                ];
+            }
         }
         
         // Next.js detection
