@@ -1208,9 +1208,13 @@ class DomainHealthReporter {
             
             // Try to get WordPress version from various assets
             // Pattern 1: wp-content plugins/themes with ver= parameter (most reliable for WordPress)
-            if (preg_match('/wp-content\/(?:plugins|themes)\/[^?]*\?[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
+            // Exclude Oxygen plugin paths as they contain Oxygen version, not WordPress version
+            if (preg_match('/wp-content\/(?:plugins|themes)\/(?!oxygen\/)[^?]*\?[^\'">]*ver=(\d+\.\d+\.?\d*)/i', $body, $matches)) {
                 $versionNum = $matches[1];
-                if (version_compare($versionNum, '3.0', '>=') && version_compare($versionNum, '8.0', '<')) {
+                // WordPress versions are typically 3.0-7.x, exclude Oxygen versions (4.x range)
+                if (version_compare($versionNum, '3.0', '>=') && 
+                    version_compare($versionNum, '8.0', '<') &&
+                    !preg_match('/^4\.[89]\./', $versionNum)) { // Exclude Oxygen 4.8.x, 4.9.x versions
                     $version = $versionNum;
                     $method = 'WordPress asset version';
                 }
