@@ -1669,6 +1669,11 @@ class DomainHealthReporter {
             .dark h4 { color: #60a5fa; border-bottom: 1px solid #60a5fa; }
             .light h4 { color: #2c3e50; border-bottom: 1px solid #3498db; }
             h4:first-child { margin-top: 0; }
+            
+            /* Adjust spacing for Domain Registration/Expiration sections on desktop */
+            @media (min-width: 769px) {
+                .domain-info-desktop h4 { margin: 20px 0 5px 0; }
+            }
             @media (max-width: 768px) {
                 h4 { font-size: 14px; margin: 10px 0 6px 0; }
             }
