@@ -948,9 +948,14 @@ class DomainHealthReporter {
             if (empty($nonSpfRecords)) {
                 echo "<p class='no-records'>No non-SPF TXT records found</p>";
             } else {
-                foreach ($nonSpfRecords as $record) {
-                    echo "<div class='dmarc-record'>{$record}</div>";
+                echo "<div class='dmarc-record'>";
+                foreach ($nonSpfRecords as $index => $record) {
+                    if ($index > 0) {
+                        echo "<br>";
+                    }
+                    echo htmlspecialchars($record);
                 }
+                echo "</div>";
             }
         }
     }
