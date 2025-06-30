@@ -237,14 +237,14 @@ class DomainHealthReporter {
             $rowClass = ($result['code'] == 200) ? 'final-destination' : '';
             
             echo "<tr class='{$rowClass}'>";
-            echo "<td><span class='{$urlClass}'>{$url}</span></td>";
+            echo "<td><a href='{$url}' target='_blank' class='{$urlClass} redirect-link'>{$url}</a></td>";
             echo "<td><span class='{$codeClass}'>{$result['code']}</span></td>";
             echo "<td><span class='redirect-url'>{$result['final_url']}</span></td>";
             echo "<td><span class='time'>" . number_format($result['time'], 2) . "s</span></td>";
             echo "</tr>";
             
             $redirectData[] = [
-                'url' => "<span class='{$urlClass}'>{$url}</span>",
+                'url' => "<a href='{$url}' target='_blank' class='{$urlClass} redirect-link'>{$url}</a>",
                 'code' => "<span class='{$codeClass}'>{$result['code']}</span>",
                 'redirect' => "<span class='redirect-url'>{$result['final_url']}</span>",
                 'time' => "<span class='time'>" . number_format($result['time'], 2) . "s</span>"
@@ -580,6 +580,11 @@ class DomainHealthReporter {
         $this->printSectionHeader('NS Records');
         $records = $this->dnsLookup($this->domain, 'NS', $this->dnsServer);
         
+        // Sort NS records alphabetically
+        if (!empty($records)) {
+            sort($records);
+        }
+        
         // Detect DNS provider
         $dnsProvider = $this->detectDnsProvider($records);
         if ($dnsProvider) {
@@ -628,6 +633,11 @@ class DomainHealthReporter {
         // NS RECORDS (mobile)
         $this->printSectionHeader('NS Records');
         $records = $this->dnsLookup($this->domain, 'NS', $this->dnsServer);
+        
+        // Sort NS records alphabetically
+        if (!empty($records)) {
+            sort($records);
+        }
         
         // Detect DNS provider
         $dnsProvider = $this->detectDnsProvider($records);
@@ -1583,6 +1593,17 @@ class DomainHealthReporter {
             h4:first-child { margin-top: 0; }
             @media (max-width: 768px) {
                 h4 { font-size: 14px; margin: 10px 0 6px 0; }
+            }
+            
+            /* Redirect URL link styling */
+            .redirect-link {
+                color: inherit !important;
+                text-decoration: none !important;
+                border-bottom: 1px dotted currentColor !important;
+            }
+            .redirect-link:hover {
+                text-decoration: underline !important;
+                opacity: 0.8;
             }
         </style>
         ";
