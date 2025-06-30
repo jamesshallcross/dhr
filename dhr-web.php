@@ -993,9 +993,9 @@ class DomainHealthReporter {
         foreach ($nsRecords as $record) {
             $hostname = trim($record);
             
-            // Check for Cloudflare
+            // Check for Cloudflare (special orange color like hosting)
             if (preg_match('/\.cloudflare\.com\.?$/i', $hostname)) {
-                return "DNS on <span class='dns-provider-name'>Cloudflare</span>";
+                return "DNS on <span class='dns-provider-cloudflare'>Cloudflare</span>";
             }
             
             // Check for GoDaddy
