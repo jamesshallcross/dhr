@@ -1067,8 +1067,8 @@ class DomainHealthReporter {
         $this->analyzeRedirects();
         $this->analyzeSSLCertificate();
         $this->analyzeDnsRecords();
-        $this->analyzeEmailSecurity();
         $this->analyzeDomainInfo();
+        $this->analyzeEmailSecurity();
     }
 }
 
