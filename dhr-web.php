@@ -1374,9 +1374,20 @@ class DomainHealthReporter {
                     'confidence' => 95,
                     'method' => 'Meta generator tag'
                 ];
-            } else {
+            } elseif (preg_match('/Elementor\s+(\d+\.\d+\.?\d*)/i', $generator, $elementorMatches)) {
                 $frameworks[] = [
-                    'name' => $generator,
+                    'name' => 'Elementor',
+                    'version' => $elementorMatches[1],
+                    'confidence' => 95,
+                    'method' => 'Meta generator tag'
+                ];
+            } else {
+                // Clean up generic generator content - remove semicolon and everything after
+                $cleanName = preg_replace('/;.*$/', '', $generator);
+                $cleanName = trim($cleanName);
+                
+                $frameworks[] = [
+                    'name' => $cleanName,
                     'version' => 'Unknown',
                     'confidence' => 85,
                     'method' => 'Meta generator tag'
