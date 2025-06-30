@@ -717,8 +717,9 @@ class DomainHealthReporter {
         
         $foundAnalytics = [];
         
-        // Google Tag Manager detection
-        if (preg_match('/googletagmanager\.com\/gtm\.js\?id=(GTM-[A-Z0-9]+)/i', $content, $matches)) {
+        // Google Tag Manager detection (both inline script and direct src)
+        if (preg_match('/googletagmanager\.com\/gtm\.js\?id=(GTM-[A-Z0-9]+)/i', $content, $matches) ||
+            preg_match('/[\'\"](GTM-[A-Z0-9]+)[\'\"]\s*\)[^<]*<\/script>/i', $content, $matches)) {
             $gtmId = $matches[1];
             $foundAnalytics[] = [
                 'type' => 'Google Tag Manager',
@@ -808,9 +809,7 @@ class DomainHealthReporter {
         } else {
             foreach ($foundAnalytics as $analytics) {
                 echo "<div class='dmarc-record'>";
-                echo "<strong>{$analytics['type']}</strong><br>";
-                echo "{$analytics['id']}<br>";
-                echo "<em>({$analytics['method']})</em>";
+                echo "<strong>{$analytics['type']}</strong> - {$analytics['id']} <em>({$analytics['method']})</em>";
                 echo "</div>";
             }
         }
