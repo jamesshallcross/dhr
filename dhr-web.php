@@ -855,7 +855,16 @@ class DomainHealthReporter {
             }
         }
         if ($spfRecord) {
-            echo "<div class='dmarc-record'>{$spfRecord}</div>";
+            // Split SPF record on spaces for easier reading
+            $spfParts = explode(' ', $spfRecord);
+            echo "<div class='dmarc-record'>";
+            foreach ($spfParts as $index => $part) {
+                if ($index > 0) {
+                    echo "<br>";
+                }
+                echo htmlspecialchars(trim($part));
+            }
+            echo "</div>";
         } else {
             echo "<p class='no-records'>No SPF record found</p>";
         }
