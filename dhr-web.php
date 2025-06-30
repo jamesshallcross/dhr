@@ -176,6 +176,12 @@ class DomainHealthReporter {
         
         echo "</tbody></table>";
         
+        // Detect hosting provider from collected organization data
+        $hostingProvider = $this->detectHostingProvider($hostData);
+        if ($hostingProvider) {
+            echo "<div class='hosting-provider-info'>{$hostingProvider}</div>";
+        }
+        
         // Mobile cards
         echo "<div class='host-info-mobile'>";
         foreach ($hostData as $data) {
@@ -206,6 +212,47 @@ class DomainHealthReporter {
         }
         
         return $this->resolveCnameChain($record, $depth + 1);
+    }
+    
+    private function detectHostingProvider($hostData) {
+        // Collect all organization information
+        $organizations = [];
+        foreach ($hostData as $data) {
+            if (isset($data['org']) && $data['org'] !== 'N/A' && !empty($data['org'])) {
+                // Extract plain text organization (remove HTML)
+                $org = strip_tags($data['org']);
+                $organizations[] = $org;
+            }
+        }
+        
+        if (empty($organizations)) {
+            return null;
+        }
+        
+        // Check for hosting providers in order of priority
+        foreach ($organizations as $org) {
+            // WPEngine detection
+            if (stripos($org, 'WPEngine') !== false) {
+                return "Hosting on <span class='hosting-provider-name'>WPEngine</span>";
+            }
+            
+            // Shopify detection
+            if (stripos($org, 'Shopify') !== false) {
+                return "Hosting on <span class='hosting-provider-name'>Shopify</span>";
+            }
+            
+            // Stack/20i detection (Anycast CDN Subnet)
+            if (stripos($org, 'Anycast CDN Subnet') !== false) {
+                return "Hosting on <span class='hosting-provider-name'>Stack/20i</span>";
+            }
+            
+            // Cloudflare detection (special case - orange color)
+            if (stripos($org, 'Cloudflare') !== false) {
+                return "Hosting behind <span class='hosting-provider-cloudflare'>Cloudflare</span>";
+            }
+        }
+        
+        return null;
     }
     
     private function analyzeRedirects() {
@@ -1711,6 +1758,21 @@ class DomainHealthReporter {
             .redirect-link:hover {
                 text-decoration: underline !important;
                 opacity: 0.8;
+            }
+            
+            /* Hosting provider styling */
+            .hosting-provider-info {
+                margin-bottom: 10px;
+                font-size: 14px;
+                font-weight: normal;
+            }
+            .hosting-provider-name {
+                color: #4CAF50 !important;
+                font-weight: bold !important;
+            }
+            .hosting-provider-cloudflare {
+                color: #ff6600 !important;
+                font-weight: bold !important;
             }
         </style>
         ";
