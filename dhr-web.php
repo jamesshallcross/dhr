@@ -1538,8 +1538,6 @@ class DomainHealthReporter {
             .dark .priority { color: #fbbf24; }
             .light .priority { color: #f39c12; }
             .server { font-family: monospace; font-size: 12px; }
-            .dark .server { color: #4ade80; }
-            .light .server { color: #27ae60; }
             .dmarc-record { padding: 8px; border-radius: 3px; font-family: monospace; word-break: break-all; font-size: 12px; transition: all 0.3s; }
             .dark .dmarc-record { background: #3d3d3d; color: #e0e0e0; }
             .light .dmarc-record { background: #f8f9fa; color: #333; }
