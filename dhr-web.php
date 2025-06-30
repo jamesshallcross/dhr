@@ -831,6 +831,24 @@ class DomainHealthReporter {
             return null;
         }
         
+        // Check for specific Bozboz Cloudflare nameservers
+        $bozbozCloudflareNs = ['amy.ns.cloudflare.com', 'woz.ns.cloudflare.com'];
+        $foundBozbozNs = [];
+        
+        foreach ($nsRecords as $record) {
+            $hostname = trim($record);
+            $hostname = rtrim($hostname, '.');  // Remove trailing dot
+            
+            if (in_array($hostname, $bozbozCloudflareNs)) {
+                $foundBozbozNs[] = $hostname;
+            }
+        }
+        
+        // If we found both Bozboz Cloudflare nameservers
+        if (count($foundBozbozNs) >= 2) {
+            return "DNS on <span class='dns-provider-name'>Cloudflare (Bozboz account)</span>";
+        }
+        
         // Check each NS record for provider patterns
         foreach ($nsRecords as $record) {
             $hostname = trim($record);
