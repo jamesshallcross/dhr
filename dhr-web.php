@@ -1018,7 +1018,30 @@ class DomainHealthReporter {
             }
         }
         
+        // Custom sorting: prioritize specific frameworks, then by confidence
         usort($uniqueFrameworks, function($a, $b) {
+            // Define priority order
+            $priorityOrder = ['PHP', 'WordPress', 'Laravel', 'Oxygen', 'Elementor'];
+            
+            $aPriority = array_search($a['name'], $priorityOrder);
+            $bPriority = array_search($b['name'], $priorityOrder);
+            
+            // If both are in priority list, sort by priority order
+            if ($aPriority !== false && $bPriority !== false) {
+                return $aPriority - $bPriority;
+            }
+            
+            // If only A is in priority list, A comes first
+            if ($aPriority !== false && $bPriority === false) {
+                return -1;
+            }
+            
+            // If only B is in priority list, B comes first
+            if ($aPriority === false && $bPriority !== false) {
+                return 1;
+            }
+            
+            // If neither is in priority list, sort by confidence (highest first)
             return $b['confidence'] - $a['confidence'];
         });
         
@@ -1210,6 +1233,16 @@ class DomainHealthReporter {
                 'version' => $version,
                 'confidence' => 85, // Lower confidence since meta tag detection is more reliable
                 'method' => $method
+            ];
+        }
+        
+        // Oxygen Builder detection
+        if (preg_match('/oxygen.*\.css|oxygen.*\.js|ct-section|oxy-|oxygen-body/i', $body)) {
+            $frameworks[] = [
+                'name' => 'Oxygen',
+                'version' => 'Unknown',
+                'confidence' => 85,
+                'method' => 'Content analysis'
             ];
         }
         
