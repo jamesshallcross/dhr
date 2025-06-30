@@ -986,7 +986,7 @@ class DomainHealthReporter {
         
         // If we found both Bozboz Cloudflare nameservers
         if (count($foundBozbozNs) >= 2) {
-            return "DNS on <span class='dns-provider-name'>Cloudflare (Bozboz account)</span>";
+            return "DNS on <span class='dns-provider-cloudflare'>Cloudflare (Bozboz account)</span>";
         }
         
         // Check each NS record for provider patterns
