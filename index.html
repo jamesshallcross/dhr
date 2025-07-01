@@ -644,28 +644,22 @@
         document.getElementById('domainForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const domain = document.getElementById('domain').value.trim();
+            let domain = document.getElementById('domain').value.trim();
             
             if (!domain) {
                 alert('Please enter a domain name');
                 return;
             }
             
-            // Enhanced domain validation
+            // Auto-strip common prefixes and suffixes (user-friendly)
+            domain = domain.toLowerCase();
+            domain = domain.replace(/^https?:\/\//, ''); // Remove http:// or https://
+            domain = domain.replace(/^www\./, ''); // Remove www.
+            domain = domain.replace(/\/.*$/, ''); // Remove trailing path
+            
+            // Validation for truly problematic inputs
             if (domain.includes(' ')) {
                 alert('Domain names cannot contain spaces. Please remove any spaces from the domain name.');
-                return;
-            }
-            
-            // Check for other invalid characters
-            if (!/^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$/.test(domain)) {
-                alert('Please enter a valid domain name (e.g., example.com)');
-                return;
-            }
-            
-            // Check for common mistakes
-            if (domain.startsWith('http://') || domain.startsWith('https://')) {
-                alert('Please enter just the domain name without http:// or https://');
                 return;
             }
             
@@ -673,6 +667,15 @@
                 alert('Domain names cannot contain consecutive dots. Please check your input.');
                 return;
             }
+            
+            // Check for invalid characters after auto-stripping
+            if (!/^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$/.test(domain)) {
+                alert('Please enter a valid domain name (e.g., example.com)');
+                return;
+            }
+            
+            // Update the input field to show the cleaned domain
+            document.getElementById('domain').value = domain;
             
             // Show loading state
             document.getElementById('loading').style.display = 'block';
