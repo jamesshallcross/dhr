@@ -739,20 +739,25 @@
                 outputElement.innerHTML = `<div class="dig-trace-loading">Loading dig trace for ${hostname}...</div>`;
                 modal.style.display = "block";
                 
+                // Get current DNS server setting
+                const dnsSelect = document.getElementById('dnsSelect');
+                const dnsCustom = document.getElementById('dnsCustom');
+                const finalDnsServer = dnsCustom.style.display === 'block' ? dnsCustom.value.trim() : dnsSelect.value;
+                
                 // Perform dig trace request
                 fetch("dhr-web.php", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/x-www-form-urlencoded"
                     },
-                    body: `action=dig_trace&hostname=${encodeURIComponent(hostname)}&record_type=${encodeURIComponent(recordType)}`
+                    body: `action=dig_trace&hostname=${encodeURIComponent(hostname)}&record_type=${encodeURIComponent(recordType)}&dns_server=${encodeURIComponent(finalDnsServer)}`
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
                         outputElement.innerHTML = `<div style="color: red;">Error: ${data.error}</div>`;
                     } else {
-                        outputElement.textContent = data.output;
+                        outputElement.innerHTML = data.output;
                     }
                 })
                 .catch(error => {

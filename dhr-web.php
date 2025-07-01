@@ -2059,7 +2059,7 @@ class DomainHealthReporter {
         $this->analyzeEmailSecurity();
     }
     
-    public function performDigTrace($hostname, $recordType = 'A') {
+    public function performDigTrace($hostname, $recordType = 'A', $dnsServer = null) {
         // Sanitize inputs
         $hostname = escapeshellarg($hostname);
         $recordType = strtoupper($recordType);
@@ -2072,22 +2072,36 @@ class DomainHealthReporter {
         
         $recordType = escapeshellarg($recordType);
         
+        // Add DNS server parameter if provided
+        $dnsServerParam = '';
+        if ($dnsServer && filter_var($dnsServer, FILTER_VALIDATE_IP)) {
+            $dnsServerParam = '@' . escapeshellarg($dnsServer);
+        }
+        
         // Execute dig command with trace
-        $command = "dig -4 +trace {$recordType} {$hostname} 2>&1";
+        $command = "dig -4 +trace {$recordType} {$hostname} {$dnsServerParam} 2>&1";
         $output = shell_exec($command);
         
         if ($output === null) {
             return "Error: Unable to execute dig command";
         }
         
-        // Filter out DNSSEC-related lines
+        // Filter out DNSSEC-related lines and add bold formatting
         $lines = explode("\n", $output);
         $filteredLines = [];
         
         foreach ($lines as $line) {
             // Skip lines containing DNSSEC records
             if (!preg_match('/\b(DS|RRSIG|NSEC|NSEC3|DNSKEY)\b/', $line)) {
-                $filteredLines[] = $line;
+                // Apply bold formatting to lines containing the requested record type
+                $processedLine = $line;
+                if (preg_match('/\b' . preg_quote($recordType, '/') . '\b/', $line)) {
+                    // Make the entire line bold if it contains the requested record type
+                    $processedLine = '<strong>' . htmlspecialchars($line) . '</strong>';
+                } else {
+                    $processedLine = htmlspecialchars($line);
+                }
+                $filteredLines[] = $processedLine;
             }
         }
         
@@ -2103,6 +2117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Handle dig trace request
         $hostname = trim($_POST['hostname'] ?? '');
         $recordType = trim($_POST['record_type'] ?? 'A');
+        $dnsServer = trim($_POST['dns_server'] ?? '');
         
         if (empty($hostname)) {
             echo json_encode(['error' => 'Please provide a hostname.']);
@@ -2111,7 +2126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         try {
             $reporter = new DomainHealthReporter('example.com'); // Dummy domain for dig trace
-            $output = $reporter->performDigTrace($hostname, $recordType);
+            $output = $reporter->performDigTrace($hostname, $recordType, $dnsServer ?: null);
             echo json_encode(['output' => $output]);
         } catch (Exception $e) {
             echo json_encode(['error' => 'Error performing dig trace: ' . htmlspecialchars($e->getMessage())]);
