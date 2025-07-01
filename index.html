@@ -493,15 +493,17 @@
         }
         .dig-trace-modal-content {
             background-color: #fefefe;
-            margin: 2% auto;
+            margin: 1% auto;
             padding: 20px;
             border: 1px solid #888;
             border-radius: 8px;
-            width: 70%;
-            max-width: 700px;
-            max-height: 90vh;
-            overflow-y: auto;
+            width: 80%;
+            max-width: 800px;
+            height: 92vh;
+            overflow: hidden;
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
         .dark .dig-trace-modal-content {
             background-color: #2d2d2d;
@@ -537,8 +539,9 @@
             font-size: 12px;
             white-space: pre-wrap;
             word-wrap: break-word;
-            max-height: 500px;
+            flex: 1;
             overflow-y: auto;
+            min-height: 0;
         }
         .dark .dig-trace-output {
             background-color: #1a1a1a;
@@ -781,6 +784,10 @@
                         outputElement.innerHTML = `<div style="color: red;">Error: ${data.error}</div>`;
                     } else {
                         outputElement.innerHTML = data.output;
+                        // Auto-scroll to bottom to show the most important results
+                        setTimeout(() => {
+                            outputElement.scrollTop = outputElement.scrollHeight;
+                        }, 100);
                     }
                 })
                 .catch(error => {
