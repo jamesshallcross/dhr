@@ -177,7 +177,7 @@ class DomainHealthReporter {
         // Detect hosting provider from collected organization data and display above table
         $hostingProvider = $this->detectHostingProvider($hostData);
         if ($hostingProvider) {
-            echo "<div class='hosting-provider-info'>{$hostingProvider}</div>";
+            echo "<div class='hosting-provider-info host-info-desktop'>{$hostingProvider}</div>";
         }
         
         // Desktop table
@@ -290,7 +290,7 @@ class DomainHealthReporter {
     }
     
     private function analyzeRedirects() {
-        $this->printSectionHeader('HTTP/HTTPS Redirect Results');
+        $this->printSectionHeader('HTTP / HTTPS / Redirects');
         
         $urls = [
             "http://{$this->domain}",
@@ -1869,6 +1869,7 @@ class DomainHealthReporter {
                 .compact-table .status-redirect, .compact-table .status-error { font-size: 9px; }
                 
                 /* Mobile card layout for Host Information */
+                .host-info-desktop { display: none; }
                 .host-info-mobile { display: block; }
                 .host-info-mobile .compact-table { display: none; }
                 .compact-table { display: none; }
