@@ -493,13 +493,13 @@
         }
         .dig-trace-modal-content {
             background-color: #fefefe;
-            margin: 5% auto;
+            margin: 2% auto;
             padding: 20px;
             border: 1px solid #888;
             border-radius: 8px;
-            width: 90%;
-            max-width: 900px;
-            max-height: 80vh;
+            width: 70%;
+            max-width: 700px;
+            max-height: 90vh;
             overflow-y: auto;
             position: relative;
         }
@@ -645,6 +645,29 @@
             
             if (!domain) {
                 alert('Please enter a domain name');
+                return;
+            }
+            
+            // Enhanced domain validation
+            if (domain.includes(' ')) {
+                alert('Domain names cannot contain spaces. Please remove any spaces from the domain name.');
+                return;
+            }
+            
+            // Check for other invalid characters
+            if (!/^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$/.test(domain)) {
+                alert('Please enter a valid domain name (e.g., example.com)');
+                return;
+            }
+            
+            // Check for common mistakes
+            if (domain.startsWith('http://') || domain.startsWith('https://')) {
+                alert('Please enter just the domain name without http:// or https://');
+                return;
+            }
+            
+            if (domain.includes('..')) {
+                alert('Domain names cannot contain consecutive dots. Please check your input.');
                 return;
             }
             

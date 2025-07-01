@@ -11,9 +11,34 @@ class DomainHealthReporter {
     
     private function sanitizeDomain($domain) {
         $domain = strtolower(trim($domain));
+        
+        // Remove protocol if present
         $domain = preg_replace('#^https?://#', '', $domain);
+        
+        // Remove www prefix if present
         $domain = preg_replace('#^www\.#', '', $domain);
+        
+        // Remove path if present
         $domain = preg_replace('#/.*$#', '', $domain);
+        
+        // Additional validation
+        if (empty($domain)) {
+            throw new Exception('Domain name cannot be empty');
+        }
+        
+        if (strpos($domain, ' ') !== false) {
+            throw new Exception('Domain name cannot contain spaces');
+        }
+        
+        if (strpos($domain, '..') !== false) {
+            throw new Exception('Domain name cannot contain consecutive dots');
+        }
+        
+        // Basic domain validation
+        if (!preg_match('/^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$/', $domain)) {
+            throw new Exception('Invalid domain name format');
+        }
+        
         return $domain;
     }
     
@@ -2070,6 +2095,8 @@ class DomainHealthReporter {
             $recordType = 'A';
         }
         
+        // Keep the original record type for pattern matching
+        $originalRecordType = $recordType;
         $recordType = escapeshellarg($recordType);
         
         // Add DNS server parameter if provided
@@ -2095,7 +2122,7 @@ class DomainHealthReporter {
             if (!preg_match('/\b(DS|RRSIG|NSEC|NSEC3|DNSKEY)\b/', $line)) {
                 // Apply bold formatting to lines containing the requested record type
                 $processedLine = $line;
-                if (preg_match('/\b' . preg_quote($recordType, '/') . '\b/', $line)) {
+                if (preg_match('/\b' . preg_quote($originalRecordType, '/') . '\b/', $line)) {
                     // Make the entire line bold if it contains the requested record type
                     $processedLine = '<strong>' . htmlspecialchars($line) . '</strong>';
                 } else {
