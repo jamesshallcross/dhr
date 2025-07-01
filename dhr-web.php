@@ -106,6 +106,8 @@ class DomainHealthReporter {
                 
                 $hostData[] = [
                     'host' => $host,
+                    'host_clean' => $host,
+                    'record_type' => 'A',
                     'ip_cname' => "<span class='ip'>{$record}</span>",
                     'org' => "<span class='org'>{$org}</span>",
                     'status' => "<span class='status-success'>RESOLVED</span>",
@@ -115,6 +117,8 @@ class DomainHealthReporter {
                 // CNAME record
                 $hostData[] = [
                     'host' => $host,
+                    'host_clean' => $host,
+                    'record_type' => 'CNAME',
                     'ip_cname' => "<span class='cname'>{$record}</span>",
                     'org' => '',
                     'status' => "<span class='status-cname'>CNAME</span>",
@@ -129,6 +133,8 @@ class DomainHealthReporter {
                     
                     $hostData[] = [
                         'host' => "&nbsp;&nbsp;└─ {$record}",
+                        'host_clean' => $record,
+                        'record_type' => 'A',
                         'ip_cname' => "<span class='ip'>{$finalIp}</span>",
                         'org' => "<span class='org'>{$org}</span>",
                         'status' => "<span class='status-success'>RESOLVED</span>",
@@ -152,7 +158,19 @@ class DomainHealthReporter {
         // Output the collected host data to the table
         foreach ($hostData as $data) {
             echo "<tr>";
-            echo "<td>{$data['host']}</td>";
+            // Make hostname clickable for dig trace
+            $hostDisplay = $data['host'];
+            if (isset($data['host_clean']) && isset($data['record_type'])) {
+                $hostClean = htmlspecialchars($data['host_clean']);
+                $recordType = htmlspecialchars($data['record_type']);
+                // Preserve indentation but make the hostname part clickable
+                if (strpos($hostDisplay, '└─') !== false) {
+                    $hostDisplay = preg_replace('/└─\s*(.+)/', '└─ <span class="dig-trace-link" data-hostname="' . $hostClean . '" data-record-type="' . $recordType . '">$1</span>', $hostDisplay);
+                } else {
+                    $hostDisplay = '<span class="dig-trace-link" data-hostname="' . $hostClean . '" data-record-type="' . $recordType . '">' . htmlspecialchars($data['host']) . '</span>';
+                }
+            }
+            echo "<td>{$hostDisplay}</td>";
             echo "<td>{$data['ip_cname']}</td>";
             echo "<td>" . (isset($data['org']) ? $data['org'] : '') . "</td>";
             echo "<td>{$data['status']}</td>";
@@ -2027,6 +2045,94 @@ class DomainHealthReporter {
                 color: #ff6600 !important;
                 font-weight: bold !important;
             }
+            
+            /* Dig trace functionality */
+            .dig-trace-link {
+                cursor: pointer;
+                color: inherit;
+                text-decoration: none;
+                border-bottom: 1px dotted currentColor;
+                transition: opacity 0.2s;
+            }
+            .dig-trace-link:hover {
+                opacity: 0.8;
+                text-decoration: underline;
+            }
+            
+            /* Dig trace popup modal */
+            .dig-trace-modal {
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+            }
+            .dig-trace-modal-content {
+                background-color: #fefefe;
+                margin: 5% auto;
+                padding: 20px;
+                border: 1px solid #888;
+                border-radius: 8px;
+                width: 90%;
+                max-width: 900px;
+                max-height: 80vh;
+                overflow-y: auto;
+                position: relative;
+            }
+            .dark .dig-trace-modal-content {
+                background-color: #2d2d2d;
+                border-color: #555;
+                color: #e0e0e0;
+            }
+            .dig-trace-close {
+                color: #aaa;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+                cursor: pointer;
+                position: absolute;
+                right: 15px;
+                top: 10px;
+            }
+            .dig-trace-close:hover,
+            .dig-trace-close:focus {
+                color: #000;
+                text-decoration: none;
+            }
+            .dark .dig-trace-close:hover,
+            .dark .dig-trace-close:focus {
+                color: #fff;
+            }
+            .dig-trace-output {
+                background-color: #f5f5f5;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 15px;
+                margin-top: 15px;
+                font-family: 'Courier New', monospace;
+                font-size: 12px;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                max-height: 500px;
+                overflow-y: auto;
+            }
+            .dark .dig-trace-output {
+                background-color: #1a1a1a;
+                border-color: #444;
+                color: #e0e0e0;
+            }
+            .dig-trace-loading {
+                text-align: center;
+                padding: 20px;
+                font-style: italic;
+                color: #666;
+            }
+            .dark .dig-trace-loading {
+                color: #aaa;
+            }
         </style>
         ";
         
@@ -2039,24 +2145,155 @@ class DomainHealthReporter {
         $this->analyzeFramework();
         $this->analyzeGtmAnalytics();
         $this->analyzeEmailSecurity();
+        
+        // Add dig trace modal and JavaScript
+        echo '
+        <!-- Dig Trace Modal -->
+        <div id="digTraceModal" class="dig-trace-modal">
+            <div class="dig-trace-modal-content">
+                <span class="dig-trace-close">&times;</span>
+                <h3 id="digTraceTitle">Dig Trace Output</h3>
+                <div id="digTraceOutput" class="dig-trace-output">
+                    <div class="dig-trace-loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Get modal elements
+            const modal = document.getElementById("digTraceModal");
+            const closeBtn = document.querySelector(".dig-trace-close");
+            const titleElement = document.getElementById("digTraceTitle");
+            const outputElement = document.getElementById("digTraceOutput");
+            
+            // Close modal when clicking X
+            closeBtn.onclick = function() {
+                modal.style.display = "none";
+            }
+            
+            // Close modal when clicking outside of it
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+            
+            // Handle dig trace link clicks
+            document.querySelectorAll(".dig-trace-link").forEach(function(link) {
+                link.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    
+                    const hostname = this.getAttribute("data-hostname");
+                    const recordType = this.getAttribute("data-record-type");
+                    
+                    // Update modal title
+                    titleElement.textContent = `Dig Trace: ${recordType} ${hostname}`;
+                    
+                    // Show modal with loading message
+                    outputElement.innerHTML = `<div class="dig-trace-loading">Loading dig trace for ${hostname}...</div>`;
+                    modal.style.display = "block";
+                    
+                    // Perform dig trace request
+                    fetch("", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded"
+                        },
+                        body: `action=dig_trace&hostname=${encodeURIComponent(hostname)}&record_type=${encodeURIComponent(recordType)}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            outputElement.innerHTML = `<div style="color: red;">Error: ${data.error}</div>`;
+                        } else {
+                            outputElement.textContent = data.output;
+                        }
+                    })
+                    .catch(error => {
+                        outputElement.innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
+                    });
+                });
+            });
+        });
+        </script>
+        ';
+    }
+    
+    public function performDigTrace($hostname, $recordType = 'A') {
+        // Sanitize inputs
+        $hostname = escapeshellarg($hostname);
+        $recordType = strtoupper($recordType);
+        
+        // Validate record type
+        $allowedTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS'];
+        if (!in_array($recordType, $allowedTypes)) {
+            $recordType = 'A';
+        }
+        
+        $recordType = escapeshellarg($recordType);
+        
+        // Execute dig command with trace
+        $command = "dig -4 +trace {$recordType} {$hostname} 2>&1";
+        $output = shell_exec($command);
+        
+        if ($output === null) {
+            return "Error: Unable to execute dig command";
+        }
+        
+        // Filter out DNSSEC-related lines
+        $lines = explode("\n", $output);
+        $filteredLines = [];
+        
+        foreach ($lines as $line) {
+            // Skip lines containing DNSSEC records
+            if (!preg_match('/\b(DS|RRSIG|NSEC|NSEC3|DNSKEY)\b/', $line)) {
+                $filteredLines[] = $line;
+            }
+        }
+        
+        return implode("\n", $filteredLines);
     }
 }
 
 // Handle POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $domain = trim($_POST['domain'] ?? '');
-    $dnsServer = trim($_POST['dns_server'] ?? '');
+    $action = trim($_POST['action'] ?? 'analyze');
     
-    if (empty($domain)) {
-        echo "<div class='error'>Please provide a domain name.</div>";
+    if ($action === 'dig_trace') {
+        // Handle dig trace request
+        $hostname = trim($_POST['hostname'] ?? '');
+        $recordType = trim($_POST['record_type'] ?? 'A');
+        
+        if (empty($hostname)) {
+            echo json_encode(['error' => 'Please provide a hostname.']);
+            exit;
+        }
+        
+        try {
+            $reporter = new DomainHealthReporter('example.com'); // Dummy domain for dig trace
+            $output = $reporter->performDigTrace($hostname, $recordType);
+            echo json_encode(['output' => $output]);
+        } catch (Exception $e) {
+            echo json_encode(['error' => 'Error performing dig trace: ' . htmlspecialchars($e->getMessage())]);
+        }
         exit;
-    }
-    
-    try {
-        $reporter = new DomainHealthReporter($domain, $dnsServer ?: null);
-        $reporter->analyze();
-    } catch (Exception $e) {
-        echo "<div class='error'>Error analyzing domain: " . htmlspecialchars($e->getMessage()) . "</div>";
+    } else {
+        // Handle normal domain analysis
+        $domain = trim($_POST['domain'] ?? '');
+        $dnsServer = trim($_POST['dns_server'] ?? '');
+        
+        if (empty($domain)) {
+            echo "<div class='error'>Please provide a domain name.</div>";
+            exit;
+        }
+        
+        try {
+            $reporter = new DomainHealthReporter($domain, $dnsServer ?: null);
+            $reporter->analyze();
+        } catch (Exception $e) {
+            echo "<div class='error'>Error analyzing domain: " . htmlspecialchars($e->getMessage()) . "</div>";
+        }
     }
 } else {
     echo "<div class='error'>Invalid request method.</div>";
