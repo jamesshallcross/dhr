@@ -67,6 +67,11 @@ class DomainHealthReporter {
         echo "<h4>{$title}</h4>";
     }
     
+    private function printClickableSectionHeader($title, $recordType, $hostname = null) {
+        $hostname = $hostname ?: $this->domain;
+        echo "<h4><span class='dig-trace-link' data-hostname='{$hostname}' data-record-type='{$recordType}'>{$title}</span></h4>";
+    }
+    
     private function dnsLookup($domain, $type = 'A', $server = null) {
         $cmd = 'dig ';
         if ($server) {
@@ -627,7 +632,7 @@ class DomainHealthReporter {
         echo "<div class='dns-column'>";
         
         // MX RECORDS
-        $this->printSectionHeader('MX Records');
+        $this->printClickableSectionHeader('MX Records', 'MX');
         $records = $this->dnsLookup($this->domain, 'MX', $this->dnsServer);
         
         // Detect email provider
@@ -653,7 +658,7 @@ class DomainHealthReporter {
         echo "<div class='dns-column'>";
         
         // NS RECORDS
-        $this->printSectionHeader('NS Records');
+        $this->printClickableSectionHeader('NS Records', 'NS');
         $records = $this->dnsLookup($this->domain, 'NS', $this->dnsServer);
         
         // Sort NS records alphabetically
@@ -684,7 +689,7 @@ class DomainHealthReporter {
         echo "<div class='dns-records-mobile'>";
         
         // MX RECORDS (mobile)
-        $this->printSectionHeader('MX Records');
+        $this->printClickableSectionHeader('MX Records', 'MX');
         $records = $this->dnsLookup($this->domain, 'MX', $this->dnsServer);
         
         // Detect email provider
@@ -707,7 +712,7 @@ class DomainHealthReporter {
         }
         
         // NS RECORDS (mobile)
-        $this->printSectionHeader('NS Records');
+        $this->printClickableSectionHeader('NS Records', 'NS');
         $records = $this->dnsLookup($this->domain, 'NS', $this->dnsServer);
         
         // Sort NS records alphabetically
@@ -875,7 +880,7 @@ class DomainHealthReporter {
     
     private function analyzeEmailSecurity() {
         // DMARC Record
-        $this->printSectionHeader('DMARC Record');
+        $this->printClickableSectionHeader('DMARC Record', 'TXT', "_dmarc.{$this->domain}");
         $dmarc = $this->dnsLookup("_dmarc.{$this->domain}", 'TXT', $this->dnsServer);
         if (empty($dmarc)) {
             echo "<p class='no-records'>No DMARC record found</p>";
@@ -884,7 +889,7 @@ class DomainHealthReporter {
         }
         
         // SPF Record  
-        $this->printSectionHeader('SPF Record');
+        $this->printClickableSectionHeader('SPF Record', 'TXT');
         $txtRecords = $this->dnsLookup($this->domain, 'TXT', $this->dnsServer);
         $spfRecord = null;
         if (!empty($txtRecords)) {
@@ -975,7 +980,7 @@ class DomainHealthReporter {
         }
         
         // TXT Records (root domain only) - exclude SPF record
-        $this->printSectionHeader('TXT Records');
+        $this->printClickableSectionHeader('TXT Records', 'TXT');
         if (empty($txtRecords)) {
             echo "<p class='no-records'>No TXT records found</p>";
         } else {
