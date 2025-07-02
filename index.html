@@ -557,6 +557,124 @@
         .dark .dig-trace-loading {
             color: #aaa;
         }
+        
+        /* Domain history dropdown */
+        .domain-input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .domain-input-container input {
+            flex: 1;
+            border-radius: 4px 0 0 4px;
+        }
+        .domain-history-btn {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-left: none;
+            border-radius: 0 4px 4px 0;
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+            transition: background-color 0.2s;
+        }
+        .domain-history-btn:hover {
+            background: #e0e0e0;
+        }
+        .dark .domain-history-btn {
+            background: #3d3d3d;
+            border-color: #555;
+            color: #ccc;
+        }
+        .dark .domain-history-btn:hover {
+            background: #4d4d4d;
+        }
+        .domain-history-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .dark .domain-history-dropdown {
+            background: #2d2d2d;
+            border-color: #555;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .domain-history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8f8f8;
+            border-bottom: 1px solid #ddd;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .dark .domain-history-header {
+            background: #3d3d3d;
+            border-bottom-color: #555;
+        }
+        .clear-history-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+        }
+        .clear-history-btn:hover {
+            background: #e0e0e0;
+            color: #666;
+        }
+        .dark .clear-history-btn:hover {
+            background: #4d4d4d;
+            color: #ccc;
+        }
+        .domain-history-list {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .domain-history-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s;
+        }
+        .domain-history-item:hover {
+            background: #f8f8f8;
+        }
+        .domain-history-item:last-child {
+            border-bottom: none;
+        }
+        .dark .domain-history-item {
+            border-bottom-color: #444;
+        }
+        .dark .domain-history-item:hover {
+            background: #3d3d3d;
+        }
+        .domain-history-empty {
+            padding: 15px 12px;
+            text-align: center;
+            color: #999;
+            font-style: italic;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -566,7 +684,19 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="domain">Domain to analyze:</label>
-                    <input type="text" id="domain" name="domain" placeholder="example.com" required>
+                    <div class="domain-input-container">
+                        <input type="text" id="domain" name="domain" placeholder="example.com" required autocomplete="off">
+                        <button type="button" id="domainHistoryBtn" class="domain-history-btn" title="Previous domains">▼</button>
+                        <div id="domainHistoryDropdown" class="domain-history-dropdown">
+                            <div class="domain-history-header">
+                                <span>Recent domains:</span>
+                                <button type="button" id="clearHistoryBtn" class="clear-history-btn" title="Clear history">×</button>
+                            </div>
+                            <div id="domainHistoryList" class="domain-history-list">
+                                <!-- History items will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="form-group narrow">
@@ -712,6 +842,131 @@
                 resultsDiv.innerHTML = '<h3>Error</h3><p>Failed to analyze domain: ' + error.message + '</p>';
                 resultsDiv.style.display = 'block';
                 resultsDiv.className = 'results error';
+            });
+        });
+        
+        // Domain history management
+        const DOMAIN_HISTORY_KEY = 'dhr_domain_history';
+        const MAX_HISTORY_ITEMS = 10;
+        
+        function getDomainHistory() {
+            try {
+                const history = localStorage.getItem(DOMAIN_HISTORY_KEY);
+                return history ? JSON.parse(history) : [];
+            } catch (e) {
+                console.warn('Failed to load domain history:', e);
+                return [];
+            }
+        }
+        
+        function saveDomainHistory(domains) {
+            try {
+                localStorage.setItem(DOMAIN_HISTORY_KEY, JSON.stringify(domains));
+            } catch (e) {
+                console.warn('Failed to save domain history:', e);
+            }
+        }
+        
+        function addDomainToHistory(domain) {
+            if (!domain) return;
+            
+            let history = getDomainHistory();
+            
+            // Remove existing occurrence of this domain
+            history = history.filter(d => d !== domain);
+            
+            // Add to beginning
+            history.unshift(domain);
+            
+            // Limit to max items
+            if (history.length > MAX_HISTORY_ITEMS) {
+                history = history.slice(0, MAX_HISTORY_ITEMS);
+            }
+            
+            saveDomainHistory(history);
+            updateHistoryDropdown();
+        }
+        
+        function clearDomainHistory() {
+            saveDomainHistory([]);
+            updateHistoryDropdown();
+        }
+        
+        function updateHistoryDropdown() {
+            const historyList = document.getElementById('domainHistoryList');
+            const history = getDomainHistory();
+            
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="domain-history-empty">No recent domains</div>';
+                return;
+            }
+            
+            historyList.innerHTML = history.map(domain => 
+                `<div class="domain-history-item" data-domain="${domain}">${domain}</div>`
+            ).join('');
+        }
+        
+        // Domain history dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const domainInput = document.getElementById('domain');
+            const historyBtn = document.getElementById('domainHistoryBtn');
+            const historyDropdown = document.getElementById('domainHistoryDropdown');
+            const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+            const historyList = document.getElementById('domainHistoryList');
+            
+            // Initialize history dropdown
+            updateHistoryDropdown();
+            
+            // Toggle dropdown
+            historyBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const isVisible = historyDropdown.style.display === 'block';
+                historyDropdown.style.display = isVisible ? 'none' : 'block';
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.domain-input-container')) {
+                    historyDropdown.style.display = 'none';
+                }
+            });
+            
+            // Handle history item clicks
+            historyList.addEventListener('click', function(e) {
+                if (e.target.classList.contains('domain-history-item')) {
+                    const domain = e.target.getAttribute('data-domain');
+                    domainInput.value = domain;
+                    historyDropdown.style.display = 'none';
+                    
+                    // Trigger change event
+                    domainInput.dispatchEvent(new Event('change'));
+                }
+            });
+            
+            // Clear history
+            clearHistoryBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('Clear domain history?')) {
+                    clearDomainHistory();
+                }
+            });
+            
+            // Add domain to history when form is submitted successfully
+            const originalFormHandler = document.getElementById('domainForm').onsubmit;
+            const domainForm = document.getElementById('domainForm');
+            
+            // Override the existing form submit handler to include history saving
+            domainForm.addEventListener('submit', function(e) {
+                const domain = document.getElementById('domain').value.trim();
+                if (domain) {
+                    // Save to history after validation and cleanup
+                    setTimeout(() => {
+                        const cleanedDomain = document.getElementById('domain').value;
+                        if (cleanedDomain) {
+                            addDomainToHistory(cleanedDomain);
+                        }
+                    }, 100);
+                }
             });
         });
     </script>
