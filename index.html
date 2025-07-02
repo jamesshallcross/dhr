@@ -675,6 +675,36 @@
             font-style: italic;
             font-size: 12px;
         }
+        
+        /* DNS Server input container styling to match domain input */
+        .dns-input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .dns-input-container select {
+            flex: 1;
+            border-radius: 4px 0 0 4px;
+        }
+        .dns-input-container input {
+            flex: 1;
+            border-radius: 4px 0 0 4px;
+        }
+        .dns-spacer {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-left: none;
+            border-radius: 0 4px 4px 0;
+            width: 28px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .dark .dns-spacer {
+            background: #3d3d3d;
+            border-color: #555;
+        }
     </style>
 </head>
 <body>
@@ -701,13 +731,16 @@
                 
                 <div class="form-group narrow">
                     <label for="dnsSelect">DNS Server:</label>
-                    <select id="dnsSelect" name="dnsSelect">
-                        <option value="1.1.1.1" selected>Cloudflare (1.1.1.1)</option>
-                        <option value="8.8.8.8">Google DNS (8.8.8.8)</option>
-                        <option value="208.67.222.222">OpenDNS (208.67.222.222)</option>
-                        <option value="other">Other...</option>
-                    </select>
-                    <input type="text" id="dnsCustom" name="dnsCustom" placeholder="Enter custom DNS IP" style="display: none;">
+                    <div class="dns-input-container">
+                        <select id="dnsSelect" name="dnsSelect">
+                            <option value="1.1.1.1" selected>Cloudflare (1.1.1.1)</option>
+                            <option value="8.8.8.8">Google DNS (8.8.8.8)</option>
+                            <option value="208.67.222.222">OpenDNS (208.67.222.222)</option>
+                            <option value="other">Other...</option>
+                        </select>
+                        <div class="dns-spacer"></div>
+                        <input type="text" id="dnsCustom" name="dnsCustom" placeholder="Enter custom DNS IP" style="display: none;">
+                    </div>
                 </div>
                 
                 <div class="form-group button">
