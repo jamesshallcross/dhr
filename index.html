@@ -676,37 +676,80 @@
             font-size: 12px;
         }
         
-        /* DNS Server input container styling to match domain input */
+        /* DNS Server input container styling to match domain input exactly */
         .dns-input-container {
             position: relative;
             display: flex;
             align-items: center;
         }
-        .dns-input-container select {
+        .dns-input-container #dnsDisplay {
             flex: 1;
             border-radius: 4px 0 0 4px;
-            /* Keep native dropdown arrow but adjust padding to account for spacer */
-            padding-right: 30px;
+            cursor: pointer;
         }
-        .dns-input-container input {
+        .dns-input-container #dnsCustom {
             flex: 1;
             border-radius: 4px 0 0 4px;
         }
-        .dns-visual-spacer {
+        .dns-dropdown-btn {
             background: #f0f0f0;
             border: 1px solid #ddd;
             border-left: none;
             border-radius: 0 4px 4px 0;
             padding: 8px 10px;
+            cursor: pointer;
             font-size: 12px;
             color: #666;
-            min-width: 8px;
             transition: background-color 0.2s;
         }
-        .dark .dns-visual-spacer {
+        .dns-dropdown-btn:hover {
+            background: #e0e0e0;
+        }
+        .dark .dns-dropdown-btn {
             background: #3d3d3d;
             border-color: #555;
             color: #ccc;
+        }
+        .dark .dns-dropdown-btn:hover {
+            background: #4d4d4d;
+        }
+        .dns-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .dark .dns-dropdown-menu {
+            background: #2d2d2d;
+            border-color: #555;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .dns-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s;
+        }
+        .dns-option:hover {
+            background: #f8f8f8;
+        }
+        .dns-option:last-child {
+            border-bottom: none;
+        }
+        .dark .dns-option {
+            border-bottom-color: #444;
+        }
+        .dark .dns-option:hover {
+            background: #3d3d3d;
         }
     </style>
 </head>
@@ -735,13 +778,15 @@
                 <div class="form-group narrow">
                     <label for="dnsSelect">DNS Server:</label>
                     <div class="dns-input-container">
-                        <select id="dnsSelect" name="dnsSelect">
-                            <option value="1.1.1.1" selected>Cloudflare (1.1.1.1)</option>
-                            <option value="8.8.8.8">Google DNS (8.8.8.8)</option>
-                            <option value="208.67.222.222">OpenDNS (208.67.222.222)</option>
-                            <option value="other">Other...</option>
-                        </select>
-                        <div class="dns-visual-spacer"></div>
+                        <input type="text" id="dnsDisplay" readonly placeholder="Cloudflare (1.1.1.1)" value="Cloudflare (1.1.1.1)">
+                        <button type="button" id="dnsDropdownBtn" class="dns-dropdown-btn" title="Select DNS server">▼</button>
+                        <div id="dnsDropdownMenu" class="dns-dropdown-menu">
+                            <div class="dns-option" data-value="1.1.1.1">Cloudflare (1.1.1.1)</div>
+                            <div class="dns-option" data-value="8.8.8.8">Google DNS (8.8.8.8)</div>
+                            <div class="dns-option" data-value="208.67.222.222">OpenDNS (208.67.222.222)</div>
+                            <div class="dns-option" data-value="other">Other...</div>
+                        </div>
+                        <input type="hidden" id="dnsSelect" name="dnsSelect" value="1.1.1.1">
                         <input type="text" id="dnsCustom" name="dnsCustom" placeholder="Enter custom DNS IP" style="display: none;">
                     </div>
                 </div>
@@ -780,30 +825,80 @@
             }
         });
         
-        // DNS server dropdown functionality
-        document.getElementById('dnsSelect').addEventListener('change', function() {
-            const dropdown = this;
-            const customInput = document.getElementById('dnsCustom');
+        // Custom DNS server dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const dnsDisplay = document.getElementById('dnsDisplay');
+            const dnsDropdownBtn = document.getElementById('dnsDropdownBtn');
+            const dnsDropdownMenu = document.getElementById('dnsDropdownMenu');
+            const dnsSelect = document.getElementById('dnsSelect');
+            const dnsCustom = document.getElementById('dnsCustom');
             
-            if (this.value === 'other') {
-                // Hide dropdown, show input in same position
-                dropdown.style.display = 'none';
-                customInput.style.display = 'block';
-                customInput.focus();
+            // Toggle dropdown
+            function toggleDnsDropdown() {
+                const isVisible = dnsDropdownMenu.style.display === 'block';
+                dnsDropdownMenu.style.display = isVisible ? 'none' : 'block';
             }
-        });
-        
-        // Handle custom input blur (when user clicks away)
-        document.getElementById('dnsCustom').addEventListener('blur', function() {
-            const dropdown = document.getElementById('dnsSelect');
-            const customInput = this;
             
-            // If empty, go back to dropdown
-            if (!customInput.value.trim()) {
-                customInput.style.display = 'none';
-                dropdown.style.display = 'block';
-                dropdown.value = '1.1.1.1'; // Reset to default
+            // Close dropdown
+            function closeDnsDropdown() {
+                dnsDropdownMenu.style.display = 'none';
             }
+            
+            // Handle dropdown button click
+            dnsDropdownBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleDnsDropdown();
+            });
+            
+            // Handle display input click (make it act like button)
+            dnsDisplay.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleDnsDropdown();
+            });
+            
+            // Handle option selection
+            dnsDropdownMenu.addEventListener('click', function(e) {
+                if (e.target.classList.contains('dns-option')) {
+                    const value = e.target.getAttribute('data-value');
+                    const text = e.target.textContent;
+                    
+                    if (value === 'other') {
+                        // Switch to custom input
+                        dnsDisplay.style.display = 'none';
+                        dnsDropdownBtn.style.display = 'none';
+                        dnsCustom.style.display = 'block';
+                        dnsCustom.style.borderRadius = '4px';
+                        dnsCustom.focus();
+                        dnsSelect.value = '';
+                    } else {
+                        // Update display and hidden input
+                        dnsDisplay.value = text;
+                        dnsSelect.value = value;
+                    }
+                    
+                    closeDnsDropdown();
+                }
+            });
+            
+            // Handle custom input blur
+            dnsCustom.addEventListener('blur', function() {
+                if (!this.value.trim()) {
+                    // Revert to dropdown
+                    this.style.display = 'none';
+                    dnsDisplay.style.display = 'block';
+                    dnsDropdownBtn.style.display = 'block';
+                    dnsDisplay.style.borderRadius = '4px 0 0 4px';
+                    dnsSelect.value = '1.1.1.1';
+                    dnsDisplay.value = 'Cloudflare (1.1.1.1)';
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dns-input-container')) {
+                    closeDnsDropdown();
+                }
+            });
         });
         
         // Handle form submission
