@@ -685,25 +685,28 @@
         .dns-input-container select {
             flex: 1;
             border-radius: 4px 0 0 4px;
+            /* Keep native dropdown arrow but adjust padding to account for spacer */
+            padding-right: 30px;
         }
         .dns-input-container input {
             flex: 1;
             border-radius: 4px 0 0 4px;
         }
-        .dns-spacer {
+        .dns-visual-spacer {
             background: #f0f0f0;
             border: 1px solid #ddd;
             border-left: none;
             border-radius: 0 4px 4px 0;
-            width: 28px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 8px 10px;
+            font-size: 12px;
+            color: #666;
+            min-width: 8px;
+            transition: background-color 0.2s;
         }
-        .dark .dns-spacer {
+        .dark .dns-visual-spacer {
             background: #3d3d3d;
             border-color: #555;
+            color: #ccc;
         }
     </style>
 </head>
@@ -738,7 +741,7 @@
                             <option value="208.67.222.222">OpenDNS (208.67.222.222)</option>
                             <option value="other">Other...</option>
                         </select>
-                        <div class="dns-spacer"></div>
+                        <div class="dns-visual-spacer"></div>
                         <input type="text" id="dnsCustom" name="dnsCustom" placeholder="Enter custom DNS IP" style="display: none;">
                     </div>
                 </div>
