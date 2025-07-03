@@ -960,6 +960,8 @@
         
         // Progressive domain analysis loading
         async function loadDomainAnalysis(domain, dnsServer) {
+            isProgressiveLoading = true; // Disable external IP observer during progressive loading
+            
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = '';
             resultsDiv.style.display = 'block';
@@ -1029,7 +1031,9 @@
                 }
                 
                 console.log('All sections loaded');
+                isProgressiveLoading = false; // Re-enable external IP observer
             } catch (error) {
+                isProgressiveLoading = false; // Re-enable external IP observer on error
                 document.getElementById('loading').style.display = 'none';
                 resultsDiv.innerHTML = '<h3>Error</h3><p>Failed to analyze domain: ' + error.message + '</p>';
                 resultsDiv.className = 'results error';
@@ -1037,12 +1041,21 @@
             }
         }
         
-        // External IP detection
+        // External IP detection with caching
+        let cachedExternalIPInfo = null;
+        
         function fetchExternalIP() {
             const externalIPElement = document.getElementById('external-ip');
             if (!externalIPElement) {
                 console.log('External IP element not found');
                 return; // Element doesn't exist yet
+            }
+            
+            // Use cached result if available
+            if (cachedExternalIPInfo) {
+                console.log('Using cached external IP info');
+                externalIPElement.textContent = cachedExternalIPInfo;
+                return;
             }
             
             console.log('Starting external IP detection...');
@@ -1138,15 +1151,19 @@
                             console.log(`Organization found: ${data.organization}`);
                         }
                         
+                        // Cache the result and update display
+                        cachedExternalIPInfo = displayText;
                         externalIPElement.textContent = displayText;
                     } else {
                         console.warn('Failed to fetch IP info');
                         // Keep just the IP if lookup fails
+                        cachedExternalIPInfo = ip;
                         externalIPElement.textContent = ip;
                     }
                 } catch (error) {
                     console.warn('Error fetching IP info:', error);
                     // Keep just the IP if there's an error
+                    cachedExternalIPInfo = ip;
                     externalIPElement.textContent = ip;
                 }
             }
@@ -1157,8 +1174,14 @@
         // Fetch external IP when page loads
         document.addEventListener('DOMContentLoaded', fetchExternalIP);
         
-        // Re-fetch external IP when new analysis is loaded
-        const observer = new MutationObserver(function(mutations) {
+        // External IP observer - only triggers for non-progressive loads
+        let isProgressiveLoading = false;
+        
+        const externalIPObserver = new MutationObserver(function(mutations) {
+            if (isProgressiveLoading) {
+                return; // Skip during progressive loading
+            }
+            
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList') {
                     mutation.addedNodes.forEach(function(node) {
@@ -1178,7 +1201,7 @@
         // Observe the results container for new content
         const resultsContainer = document.getElementById('results');
         if (resultsContainer) {
-            observer.observe(resultsContainer, { childList: true, subtree: true });
+            externalIPObserver.observe(resultsContainer, { childList: true, subtree: true });
         }
         
         // Domain history management
@@ -1395,7 +1418,7 @@
     document.addEventListener("DOMContentLoaded", initDigTrace);
     
     // Set up a MutationObserver to detect when new content is added
-    const observer = new MutationObserver(function(mutations) {
+    const digTraceObserver = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                 // Check if any new nodes contain dig-trace-link elements
@@ -1413,7 +1436,7 @@
     // Start observing the results container for changes
     const resultsDiv = document.getElementById('results');
     if (resultsDiv) {
-        observer.observe(resultsDiv, { childList: true, subtree: true });
+        digTraceObserver.observe(resultsDiv, { childList: true, subtree: true });
     }
     </script>
 </body>
