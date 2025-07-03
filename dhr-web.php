@@ -57,7 +57,7 @@ class DomainHealthReporter {
         echo "<div class='info-item'><strong>Using:</strong> <span class='dns-server'>{$dnsInfo}</span></div>";
         echo "</div>";
         echo "<div class='info-grid'>";
-        echo "<div class='info-item'><strong><a href='local-info.html' class='external-ip-link' target='_blank'>Local External IP:</a></strong> <span id='external-ip' class='external-ip'>Loading...</span></div>";
+        echo "<div class='info-item'><strong><a href='local-info.html' class='external-ip-link'>Local External IP:</a></strong> <span id='external-ip' class='external-ip'>Loading...</span></div>";
         echo "</div>";
         echo "</div>";
     }

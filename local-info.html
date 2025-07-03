@@ -57,16 +57,16 @@
             outline: none;
         }
         .dark .theme-toggle {
-            background: #555;
+            background: #4CAF50;
         }
         .light .theme-toggle {
-            background: #ddd;
+            background: #ccc;
         }
         .theme-toggle::before {
             content: '';
             position: absolute;
             top: 2px;
-            left: 2px;
+            right: 2px;
             width: 16px;
             height: 16px;
             border-radius: 50%;
@@ -74,8 +74,7 @@
             transition: transform 0.3s;
         }
         .light .theme-toggle::before {
-            transform: translateX(18px);
-            background: #333;
+            transform: translateX(-18px);
         }
         
         h1 {
@@ -155,7 +154,6 @@
         
         <a href="index.html" class="back-link">← Back to Domain Health Reporter</a>
         <h1>Local System Information</h1>
-        <div class="subtitle">Client troubleshooting data</div>
         
         <table class="info-table">
             <tr>
@@ -516,13 +514,15 @@
                 const cores = navigator.hardwareConcurrency || 'Unknown';
                 
                 // Note: navigator.deviceMemory provides an approximation/hint, not actual RAM
-                // It's intentionally imprecise for privacy reasons and may show ~half actual RAM
+                // It's intentionally imprecise for privacy reasons and often shows ~half actual RAM
                 let memoryInfo = 'Not available';
                 if (navigator.deviceMemory) {
-                    memoryInfo = `~${navigator.deviceMemory}GB (estimate)`;
+                    // Double the value as it typically reports half the actual RAM
+                    const estimatedRAM = navigator.deviceMemory * 2;
+                    memoryInfo = `~${estimatedRAM}GB RAM`;
                 }
                 
-                updateTest('hardware-info', `${cores} CPU cores, ${memoryInfo} RAM`);
+                updateTest('hardware-info', `${cores} CPU cores, ${memoryInfo}`);
             } catch (error) {
                 updateTest('hardware-info', 'Detection failed');
             }
