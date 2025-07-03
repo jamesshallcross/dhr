@@ -15,7 +15,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1000px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 15px;
             transition: background-color 0.3s, color 0.3s;
@@ -29,91 +29,19 @@
             color: #333;
         }
         
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
+        .container {
+            padding: 15px;
             border-radius: 10px;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            position: relative;
         }
-        .dark .header {
+        .dark .container {
             background: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
-        .light .header {
+        .light .container {
             background: white;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .test-category {
-            margin-bottom: 25px;
-            padding: 15px;
-            border-radius: 8px;
-            transition: background-color 0.3s;
-        }
-        .dark .test-category {
-            background: #2d2d2d;
-            border-left: 4px solid #4CAF50;
-        }
-        .light .test-category {
-            background: white;
-            border-left: 4px solid #4CAF50;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .category-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #4CAF50;
-        }
-        
-        .test-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(128,128,128,0.2);
-        }
-        .test-item:last-child {
-            border-bottom: none;
-        }
-        
-        .test-label {
-            font-weight: 500;
-            min-width: 200px;
-        }
-        
-        .test-value {
-            font-family: 'Courier New', monospace;
-            background: rgba(128,128,128,0.1);
-            padding: 4px 8px;
-            border-radius: 4px;
-            flex: 1;
-            margin-left: 15px;
-            word-break: break-word;
-        }
-        
-        .test-status {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            margin-left: 10px;
-        }
-        .status-loading {
-            background: #ffc107;
-            color: #000;
-        }
-        .status-success {
-            background: #28a745;
-            color: #fff;
-        }
-        .status-error {
-            background: #dc3545;
-            color: #fff;
-        }
-        .status-unavailable {
-            background: #6c757d;
-            color: #fff;
         }
         
         .theme-toggle {
@@ -129,119 +57,144 @@
             outline: none;
         }
         .dark .theme-toggle {
-            background: #4CAF50;
+            background: #555;
         }
         .light .theme-toggle {
+            background: #ddd;
+        }
+        .theme-toggle::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            transition: transform 0.3s;
+        }
+        .light .theme-toggle::before {
+            transform: translateX(18px);
             background: #333;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin: 0 0 5px 0;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+            opacity: 0.8;
         }
         
         .back-link {
             display: inline-block;
-            margin-bottom: 20px;
-            padding: 8px 16px;
-            background: #4CAF50;
-            color: white;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #4CAF50;
             text-decoration: none;
-            border-radius: 4px;
-            transition: background-color 0.3s;
         }
         .back-link:hover {
-            background: #45a049;
+            text-decoration: underline;
+        }
+        
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .info-table tr {
+            border-bottom: 1px solid rgba(128,128,128,0.2);
+        }
+        .info-table tr:last-child {
+            border-bottom: none;
+        }
+        
+        .info-table td {
+            padding: 8px 0;
+            vertical-align: top;
+        }
+        
+        .info-table td:first-child {
+            font-weight: 500;
+            width: 180px;
+            padding-right: 15px;
+        }
+        
+        .info-table td:last-child {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            word-break: break-word;
         }
         
         @media (max-width: 768px) {
             body {
                 padding: 10px;
             }
-            .test-item {
-                flex-direction: column;
-                align-items: flex-start;
+            .container {
+                padding: 10px;
             }
-            .test-value {
-                margin-left: 0;
-                margin-top: 5px;
-                width: 100%;
+            .info-table td:first-child {
+                width: 120px;
+                font-size: 13px;
             }
-            .test-label {
-                min-width: auto;
+            .info-table td:last-child {
+                font-size: 12px;
             }
         }
     </style>
 </head>
 <body class="dark">
-    <button class="theme-toggle" id="themeToggle"></button>
-    
-    <div class="header">
+    <div class="container">
+        <button class="theme-toggle" id="themeToggle"></button>
+        
         <a href="index.html" class="back-link">← Back to Domain Health Reporter</a>
         <h1>Local System Information</h1>
-        <p>Comprehensive client-side troubleshooting data</p>
-    </div>
-
-    <!-- ESSENTIAL SYSTEM INFORMATION -->
-    <div class="test-category">
-        <div class="category-title">📱 Display Information</div>
+        <div class="subtitle">Client troubleshooting data</div>
         
-        <div class="test-item" id="SCREEN_RESOLUTION_TEST">
-            <span class="test-label">Screen Resolution</span>
-            <span class="test-value" id="screen-resolution">Loading...</span>
-            <span class="test-status status-loading">Loading</span>
-        </div>
-        
-        <div class="test-item" id="VIEWPORT_TEST">
-            <span class="test-label">Browser Viewport</span>
-            <span class="test-value" id="viewport-size">Loading...</span>
-            <span class="test-status status-loading">Loading</span>
-        </div>
-        
-        <div class="test-item" id="DISPLAY_PROPERTIES_TEST">
-            <span class="test-label">Display Properties</span>
-            <span class="test-value" id="display-properties">Loading...</span>
-            <span class="test-status status-loading">Loading</span>
-        </div>
-    </div>
-
-    <div class="test-category">
-        <div class="category-title">🌐 Browser & System</div>
-        
-        <div class="test-item" id="BROWSER_IDENTIFICATION_TEST">
-            <span class="test-label">Browser & Version</span>
-            <span class="test-value" id="browser-info">Loading...</span>
-            <span class="test-status status-loading">Loading</span>
-        </div>
-        
-        <div class="test-item" id="OS_DETECTION_TEST">
-            <span class="test-label">Operating System</span>
-            <span class="test-value" id="os-info">Loading...</span>
-            <span class="test-status status-loading">Loading</span>
-        </div>
-        
-        <div class="test-item" id="MOBILE_DETECTION_TEST">
-            <span class="test-label">Device Type</span>
-            <span class="test-value" id="device-type">Loading...</span>
-            <span class="test-status status-loading">Loading</span>
-        </div>
-    </div>
-
-    <div class="test-category">
-        <div class="category-title">🔌 Network & Hardware</div>
-        
-        <div class="test-item" id="IP_DETECTION_TEST">
-            <span class="test-label">IP Addresses</span>
-            <span class="test-value" id="ip-addresses">Loading...</span>
-            <span class="test-status status-loading">Loading</span>
-        </div>
-        
-        <div class="test-item" id="HARDWARE_INFO_TEST">
-            <span class="test-label">Hardware Information</span>
-            <span class="test-value" id="hardware-info">Loading...</span>
-            <span class="test-status status-loading">Loading</span>
-        </div>
-        
-        <div class="test-item" id="TIMEZONE_TEST">
-            <span class="test-label">Timezone & Time</span>
-            <span class="test-value" id="timezone-info">Loading...</span>
-            <span class="test-status status-loading">Loading</span>
-        </div>
+        <table class="info-table">
+            <tr>
+                <td>Screen Resolution</td>
+                <td id="screen-resolution">Loading...</td>
+            </tr>
+            <tr>
+                <td>Browser Viewport</td>
+                <td id="viewport-size">Loading...</td>
+            </tr>
+            <tr>
+                <td>Display Properties</td>
+                <td id="display-properties">Loading...</td>
+            </tr>
+            <tr>
+                <td>Browser & Version</td>
+                <td id="browser-info">Loading...</td>
+            </tr>
+            <tr>
+                <td>Operating System</td>
+                <td id="os-info">Loading...</td>
+            </tr>
+            <tr>
+                <td>IP Addresses</td>
+                <td id="ip-addresses">Loading...</td>
+            </tr>
+            <tr>
+                <td>Hardware Information</td>
+                <td id="hardware-info">Loading...</td>
+            </tr>
+            <tr>
+                <td>Timezone & Time</td>
+                <td id="timezone-info">Loading...</td>
+            </tr>
+            <tr>
+                <td>Device Type</td>
+                <td id="device-type">Loading...</td>
+            </tr>
+        </table>
     </div>
 
     <script>
@@ -258,16 +211,9 @@
         });
 
         // Utility functions
-        function updateTest(valueElementId, value, status = 'success') {
+        function updateTest(valueElementId, value) {
             const valueElement = document.getElementById(valueElementId);
-            const testContainer = valueElement ? valueElement.closest('.test-item') : null;
-            const statusElement = testContainer ? testContainer.querySelector('.test-status') : null;
-            
             if (valueElement) valueElement.textContent = value;
-            if (statusElement) {
-                statusElement.className = `test-status status-${status}`;
-                statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-            }
         }
 
         // Run all tests on page load
@@ -298,10 +244,9 @@
         async function runScreenResolutionTest() {
             try {
                 const resolution = `${screen.width} × ${screen.height}`;
-                const available = `${screen.availWidth} × ${screen.availHeight} (available)`;
-                updateTest('screen-resolution', `${resolution} | ${available}`, 'success');
+                updateTest('screen-resolution', resolution);
             } catch (error) {
-                updateTest('screen-resolution', 'Detection failed', 'error');
+                updateTest('screen-resolution', 'Detection failed');
             }
         }
 
@@ -309,10 +254,9 @@
         async function runViewportTest() {
             try {
                 const viewport = `${window.innerWidth} × ${window.innerHeight}`;
-                const outer = `${window.outerWidth} × ${window.outerHeight} (window)`;
-                updateTest('viewport-size', `${viewport} | ${outer}`, 'success');
+                updateTest('viewport-size', viewport);
             } catch (error) {
-                updateTest('viewport-size', 'Detection failed', 'error');
+                updateTest('viewport-size', 'Detection failed');
             }
         }
 
@@ -321,13 +265,9 @@
             try {
                 const pixelRatio = window.devicePixelRatio || 1;
                 const colorDepth = screen.colorDepth;
-                const orientation = screen.orientation ? screen.orientation.type : 'unknown';
-                
-                updateTest('display-properties', 
-                    `Pixel Ratio: ${pixelRatio} | Color Depth: ${colorDepth}bit | Orientation: ${orientation}`, 
-                    'success');
+                updateTest('display-properties', `${pixelRatio}x pixel ratio, ${colorDepth}-bit color`);
             } catch (error) {
-                updateTest('display-properties', 'Detection failed', 'error');
+                updateTest('display-properties', 'Detection failed');
             }
         }
 
@@ -352,10 +292,9 @@
                     browserInfo = `Edge ${match ? match[1] : 'Unknown Version'}`;
                 }
                 
-                const language = navigator.language || 'Unknown';
-                updateTest('browser-info', `${browserInfo} | Language: ${language}`, 'success');
+                updateTest('browser-info', browserInfo);
             } catch (error) {
-                updateTest('browser-info', 'Detection failed', 'error');
+                updateTest('browser-info', 'Detection failed');
             }
         }
 
@@ -414,31 +353,30 @@
         async function runOSDetectionTest() {
             try {
                 const userAgent = navigator.userAgent;
-                const platform = navigator.platform;
                 let osInfo = 'Unknown OS';
                 
                 if (userAgent.includes('Windows NT 10.0')) osInfo = 'Windows 10/11';
                 else if (userAgent.includes('Windows NT 6.3')) osInfo = 'Windows 8.1';
                 else if (userAgent.includes('Windows NT 6.2')) osInfo = 'Windows 8';
                 else if (userAgent.includes('Windows NT 6.1')) osInfo = 'Windows 7';
-                else if (userAgent.includes('Windows')) osInfo = 'Windows (Other)';
+                else if (userAgent.includes('Windows')) osInfo = 'Windows';
                 else if (userAgent.includes('Mac OS X')) {
                     const match = userAgent.match(/Mac OS X ([0-9_]+)/);
-                    osInfo = `macOS ${match ? match[1].replace(/_/g, '.') : 'Unknown Version'}`;
+                    osInfo = `macOS ${match ? match[1].replace(/_/g, '.') : ''}`;
                 }
                 else if (userAgent.includes('Linux')) osInfo = 'Linux';
                 else if (userAgent.includes('Android')) {
                     const match = userAgent.match(/Android ([0-9.]+)/);
-                    osInfo = `Android ${match ? match[1] : 'Unknown Version'}`;
+                    osInfo = `Android ${match ? match[1] : ''}`;
                 }
                 else if (userAgent.includes('iPhone OS') || userAgent.includes('iOS')) {
                     const match = userAgent.match(/OS ([0-9_]+)/);
-                    osInfo = `iOS ${match ? match[1].replace(/_/g, '.') : 'Unknown Version'}`;
+                    osInfo = `iOS ${match ? match[1].replace(/_/g, '.') : ''}`;
                 }
                 
-                updateTest('os-info', `${osInfo} | Platform: ${platform}`, 'success');
+                updateTest('os-info', osInfo);
             } catch (error) {
-                updateTest('os-info', 'Detection failed', 'error');
+                updateTest('os-info', 'Detection failed');
             }
         }
 
@@ -504,7 +442,7 @@
                             if (ip && !ipDetected && isPrivateIP(ip)) {
                                 localIP = ip;
                                 ipDetected = true;
-                                updateTest('ip-addresses', `External: ${externalIP} | Local: ${localIP}`, 'success');
+                                updateTest('ip-addresses', `External: ${externalIP} | Local: ${localIP}`);
                                 pc.close();
                             }
                         }
@@ -514,16 +452,16 @@
                     setTimeout(() => {
                         if (!ipDetected) {
                             pc.close();
-                            updateTest('ip-addresses', `External: ${externalIP} | Local: ${localIP}`, 'success');
+                            updateTest('ip-addresses', `External: ${externalIP} | Local: ${localIP}`);
                         }
                     }, 3000);
                     
                 } catch (e) {
                     console.warn('WebRTC IP detection failed:', e);
-                    updateTest('ip-addresses', `External: ${externalIP} | Local: ${localIP}`, 'success');
+                    updateTest('ip-addresses', `External: ${externalIP} | Local: ${localIP}`);
                 }
             } catch (error) {
-                updateTest('ip-addresses', 'Detection failed', 'error');
+                updateTest('ip-addresses', 'Detection failed');
             }
         }
         
@@ -576,10 +514,17 @@
         async function runHardwareInfoTest() {
             try {
                 const cores = navigator.hardwareConcurrency || 'Unknown';
-                const memory = navigator.deviceMemory ? `~${navigator.deviceMemory}GB` : 'Unknown';
-                updateTest('hardware-info', `CPU Cores: ${cores} | RAM: ${memory}`, 'success');
+                
+                // Note: navigator.deviceMemory provides an approximation/hint, not actual RAM
+                // It's intentionally imprecise for privacy reasons and may show ~half actual RAM
+                let memoryInfo = 'Not available';
+                if (navigator.deviceMemory) {
+                    memoryInfo = `~${navigator.deviceMemory}GB (estimate)`;
+                }
+                
+                updateTest('hardware-info', `${cores} CPU cores, ${memoryInfo} RAM`);
             } catch (error) {
-                updateTest('hardware-info', 'Detection failed', 'error');
+                updateTest('hardware-info', 'Detection failed');
             }
         }
 
@@ -622,9 +567,9 @@
                     hour12: false
                 });
                 
-                updateTest('timezone-info', `${timezone} | UTC${offsetSign}${offsetStr} | ${currentTime}`, 'success');
+                updateTest('timezone-info', `${timezone} (UTC${offsetSign}${offsetStr}) - ${currentTime}`);
             } catch (error) {
-                updateTest('timezone-info', 'Detection failed', 'error');
+                updateTest('timezone-info', 'Detection failed');
             }
         }
 
@@ -639,9 +584,13 @@
                 if (isTablet) deviceType = 'Tablet';
                 else if (isMobile) deviceType = 'Mobile';
                 
-                updateTest('device-type', `${deviceType} | Touch: ${isTouchDevice}`, 'success');
+                if (isTouchDevice && deviceType === 'Desktop') {
+                    deviceType += ' (Touch-enabled)';
+                }
+                
+                updateTest('device-type', deviceType);
             } catch (error) {
-                updateTest('device-type', 'Detection failed', 'error');
+                updateTest('device-type', 'Detection failed');
             }
         }
     </script>
