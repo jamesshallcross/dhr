@@ -954,18 +954,41 @@
                 formData.append('dns_server', finalDnsServer);
             }
             
-            // Submit to PHP backend
+            // Submit to PHP backend with streaming
             fetch('dhr-web.php', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.text())
-            .then(data => {
+            .then(response => {
                 document.getElementById('loading').style.display = 'none';
                 const resultsDiv = document.getElementById('results');
-                resultsDiv.innerHTML = data;
+                resultsDiv.innerHTML = '';
                 resultsDiv.style.display = 'block';
                 resultsDiv.className = 'results';
+                
+                // Handle streaming response
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                function readStream() {
+                    return reader.read().then(({ done, value }) => {
+                        if (done) {
+                            console.log('Stream complete');
+                            return;
+                        }
+                        
+                        const chunk = decoder.decode(value, { stream: true });
+                        resultsDiv.innerHTML += chunk;
+                        
+                        // Scroll to bottom to show new content
+                        resultsDiv.scrollTop = resultsDiv.scrollHeight;
+                        
+                        // Continue reading
+                        return readStream();
+                    });
+                }
+                
+                return readStream();
             })
             .catch(error => {
                 document.getElementById('loading').style.display = 'none';

@@ -1878,9 +1878,18 @@ class DomainHealthReporter {
     }
     
     public function analyze() {
-        // Enable output buffering for progressive display
-        if (ob_get_level()) ob_end_flush();
-        ob_start();
+        // Set headers for streaming output
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: no-cache');
+        header('Connection: keep-alive');
+        
+        // Disable default output buffering
+        while (ob_get_level()) {
+            ob_end_flush();
+        }
+        
+        // Enable implicit flush for real-time output
+        ob_implicit_flush(true);
         
         echo "
         <style>
@@ -2160,9 +2169,9 @@ class DomainHealthReporter {
     }
     
     private function flushOutput() {
-        ob_flush();
+        echo str_repeat(' ', 1024); // Padding to ensure browsers process the chunk
         flush();
-        usleep(100000); // Small delay (0.1 seconds) for visual effect
+        usleep(200000); // Small delay (0.2 seconds) for visual effect
     }
     
     public function performDigTrace($hostname, $recordType = 'A', $dnsServer = null) {
