@@ -979,27 +979,43 @@
         // External IP detection
         function fetchExternalIP() {
             const externalIPElement = document.getElementById('external-ip');
-            if (!externalIPElement) return; // Element doesn't exist yet
+            if (!externalIPElement) {
+                console.log('External IP element not found');
+                return; // Element doesn't exist yet
+            }
+            
+            console.log('Starting external IP detection...');
             
             // Try multiple IP detection services for reliability
             const ipServices = [
+                'https://api.ipify.org?format=text',
                 'https://icanhazip.com',
-                'https://api.ipify.org',
                 'https://ipecho.net/plain',
-                'https://myexternalip.com/raw'
+                'https://checkip.amazonaws.com'
             ];
             
             async function tryService(url) {
                 try {
+                    console.log(`Trying service: ${url}`);
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
+                    
                     const response = await fetch(url, { 
                         method: 'GET',
-                        timeout: 5000
+                        signal: controller.signal
                     });
+                    
+                    clearTimeout(timeoutId);
+                    
                     if (response.ok) {
                         const ip = (await response.text()).trim();
+                        console.log(`Got response from ${url}: ${ip}`);
                         // Basic IP validation
                         if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip)) {
+                            console.log(`Valid IP detected: ${ip}`);
                             return ip;
+                        } else {
+                            console.log(`Invalid IP format: ${ip}`);
                         }
                     }
                 } catch (error) {
@@ -1014,10 +1030,12 @@
                     const ip = await tryService(service);
                     if (ip) {
                         externalIPElement.textContent = ip;
+                        console.log(`Successfully set external IP: ${ip}`);
                         return;
                     }
                 }
                 // If all services fail
+                console.log('All IP services failed');
                 externalIPElement.textContent = 'Unable to detect';
                 externalIPElement.style.color = '#999';
                 externalIPElement.style.fontWeight = 'normal';
@@ -1034,8 +1052,13 @@
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList') {
                     mutation.addedNodes.forEach(function(node) {
-                        if (node.nodeType === Node.ELEMENT_NODE && node.getElementById && node.getElementById('external-ip')) {
-                            setTimeout(fetchExternalIP, 100);
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            // Check if this node or any of its children contains external-ip element
+                            const externalIPEl = node.querySelector ? node.querySelector('#external-ip') : null;
+                            if (externalIPEl || (node.id === 'external-ip')) {
+                                console.log('External IP element found in new content, refreshing...');
+                                setTimeout(fetchExternalIP, 100);
+                            }
                         }
                     });
                 }
