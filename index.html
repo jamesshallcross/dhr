@@ -1190,6 +1190,7 @@
             
             // Tailscale exit node detection
             // NOTE: This only works on Chrome with "CORS Unblock" extension installed and activated
+            // AND Chrome Site Settings > Insecure Content set to "Allow" for this site
             // to bypass mixed content and CORS restrictions when accessing HTTP Tailscale API from HTTPS page
             async function checkTailscaleExitNode() {
                 try {
