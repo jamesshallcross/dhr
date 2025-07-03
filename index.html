@@ -1301,7 +1301,7 @@
                 }
             }
             
-            // Function to show MTR modal (reuse dig trace modal)
+            // Function to show MTR modal (reuse dig trace modal styling)
             function showMtrModal(content) {
                 // Remove existing modal if any
                 const existingModal = document.getElementById('mtr-modal');
@@ -1309,17 +1309,17 @@
                     existingModal.remove();
                 }
                 
-                // Create modal
+                // Create modal using dig-trace-modal classes
                 const modal = document.createElement('div');
                 modal.id = 'mtr-modal';
-                modal.className = 'dig-modal';
+                modal.className = 'dig-trace-modal';
                 modal.innerHTML = `
-                    <div class="dig-modal-content">
-                        <div class="dig-modal-header">
+                    <div class="dig-trace-modal-content">
+                        <div class="dig-trace-header">
                             <h3>MTR Trace Results</h3>
-                            <span class="dig-modal-close">&times;</span>
+                            <span class="dig-trace-close">&times;</span>
                         </div>
-                        <div class="dig-modal-body">
+                        <div class="dig-trace-output">
                             <pre>${content}</pre>
                         </div>
                     </div>
@@ -1329,11 +1329,11 @@
                 modal.style.display = 'block';
                 
                 // Auto-scroll to bottom
-                const modalBody = modal.querySelector('.dig-modal-body');
+                const modalBody = modal.querySelector('.dig-trace-output');
                 modalBody.scrollTop = modalBody.scrollHeight;
                 
                 // Close modal event
-                const closeBtn = modal.querySelector('.dig-modal-close');
+                const closeBtn = modal.querySelector('.dig-trace-close');
                 closeBtn.onclick = function() {
                     modal.remove();
                 };
