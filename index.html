@@ -1151,6 +1151,13 @@
                             console.log(`Organization found: ${data.organization}`);
                         }
                         
+                        // Check for Tailscale exit node usage
+                        const tailscaleInfo = await checkTailscaleExitNode();
+                        if (tailscaleInfo) {
+                            displayText += ` | ${tailscaleInfo}`;
+                            console.log(`Tailscale exit node detected: ${tailscaleInfo}`);
+                        }
+                        
                         // Cache the result and update display
                         cachedExternalIPInfo = displayText;
                         externalIPElement.textContent = displayText;
@@ -1165,6 +1172,53 @@
                     // Keep just the IP if there's an error
                     cachedExternalIPInfo = ip;
                     externalIPElement.textContent = ip;
+                }
+            }
+            
+            async function checkTailscaleExitNode() {
+                try {
+                    console.log('Checking for Tailscale exit node usage...');
+                    
+                    // Try to reach Tailscale local API
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3000);
+                    
+                    const response = await fetch('http://100.100.100.100:41641/localapi/v0/status', {
+                        method: 'GET',
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {
+                        const tailscaleStatus = await response.json();
+                        console.log('Tailscale status:', tailscaleStatus);
+                        
+                        // Check if using an exit node
+                        if (tailscaleStatus.ExitNodeStatus && tailscaleStatus.ExitNodeStatus.ID) {
+                            const exitNodeID = tailscaleStatus.ExitNodeStatus.ID;
+                            
+                            // Look for the exit node in the peer list
+                            if (tailscaleStatus.Peer && tailscaleStatus.Peer[exitNodeID]) {
+                                const exitNode = tailscaleStatus.Peer[exitNodeID];
+                                let exitNodeName = exitNode.DNSName || exitNode.HostName || 'Unknown';
+                                
+                                // Clean up the name (remove .tail-scale.ts.net suffix if present)
+                                exitNodeName = exitNodeName.replace(/\..*$/, '');
+                                
+                                return `Using ${exitNodeName} Tailscale Exit Node`;
+                            }
+                        }
+                        
+                        console.log('Tailscale connected but no exit node in use');
+                        return null;
+                    } else {
+                        console.log('Tailscale API not accessible');
+                        return null;
+                    }
+                } catch (error) {
+                    console.log('Tailscale detection failed:', error.message);
+                    return null;
                 }
             }
             
