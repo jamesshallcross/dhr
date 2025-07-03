@@ -1177,13 +1177,13 @@
             
             async function checkTailscaleExitNode() {
                 try {
-                    console.log('Checking for Tailscale exit node usage...');
+                    console.log('Checking for Tailscale exit node usage via API...');
                     
-                    // Try to reach Tailscale local web interface
+                    // Try to reach Tailscale API endpoint
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 3000);
                     
-                    const response = await fetch('http://100.100.100.100', {
+                    const response = await fetch('http://100.100.100.100/api/data', {
                         method: 'GET',
                         signal: controller.signal
                     });
@@ -1191,53 +1191,24 @@
                     clearTimeout(timeoutId);
                     
                     if (response.ok) {
-                        const htmlContent = await response.text();
-                        console.log('Tailscale web interface accessible');
-                        console.log('HTML content length:', htmlContent.length);
-                        console.log('HTML content preview:', htmlContent.substring(0, 500));
+                        const tailscaleData = await response.json();
+                        console.log('Tailscale API data:', tailscaleData);
                         
-                        // Parse HTML to look for exit node information
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(htmlContent, 'text/html');
-                        
-                        // Look for "Exit node" text followed by the node name
-                        const textNodes = [];
-                        const walker = document.createTreeWalker(
-                            doc.body,
-                            NodeFilter.SHOW_TEXT,
-                            null,
-                            false
-                        );
-                        
-                        let node;
-                        while (node = walker.nextNode()) {
-                            const text = node.textContent.trim();
-                            if (text) {
-                                textNodes.push(text);
-                            }
+                        // Check if using an exit node
+                        if (tailscaleData.UsingExitNode && tailscaleData.UsingExitNode.Name) {
+                            let exitNodeName = tailscaleData.UsingExitNode.Name;
+                            
+                            // Clean up the name (remove .tail-scale.ts.net suffix if present)
+                            exitNodeName = exitNodeName.replace(/\.tail[^.]*\.ts\.net\.?$/, '');
+                            
+                            console.log(`Found exit node: ${exitNodeName}`);
+                            return `Using ${exitNodeName} Tailscale Exit Node`;
+                        } else {
+                            console.log('Tailscale connected but no exit node in use');
+                            return null;
                         }
-                        
-                        console.log('All text nodes found:', textNodes);
-                        
-                        // Find "Exit node" and get the next non-empty text node
-                        for (let i = 0; i < textNodes.length; i++) {
-                            if (textNodes[i] === 'Exit node') {
-                                console.log(`Found "Exit node" at index ${i}`);
-                                // Look for the exit node name in the next few text nodes
-                                for (let j = i + 1; j < Math.min(i + 5, textNodes.length); j++) {
-                                    const nextText = textNodes[j];
-                                    if (nextText && nextText.length > 0 && !nextText.match(/^\s*$/)) {
-                                        console.log(`Found exit node: ${nextText}`);
-                                        return `Using ${nextText} Tailscale Exit Node`;
-                                    }
-                                }
-                            }
-                        }
-                        
-                        console.log('Tailscale connected but no exit node detected in HTML');
-                        return null;
                     } else {
-                        console.log('Tailscale web interface not accessible');
+                        console.log('Tailscale API not accessible');
                         return null;
                     }
                 } catch (error) {
