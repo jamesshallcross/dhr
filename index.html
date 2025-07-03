@@ -1179,11 +1179,11 @@
                 try {
                     console.log('Checking for Tailscale exit node usage...');
                     
-                    // Try to reach Tailscale local API
+                    // Try to reach Tailscale local web interface
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 3000);
                     
-                    const response = await fetch('http://100.100.100.100:41641/localapi/v0/status', {
+                    const response = await fetch('http://100.100.100.100', {
                         method: 'GET',
                         signal: controller.signal
                     });
@@ -1191,29 +1191,45 @@
                     clearTimeout(timeoutId);
                     
                     if (response.ok) {
-                        const tailscaleStatus = await response.json();
-                        console.log('Tailscale status:', tailscaleStatus);
+                        const htmlContent = await response.text();
+                        console.log('Tailscale web interface accessible');
                         
-                        // Check if using an exit node
-                        if (tailscaleStatus.ExitNodeStatus && tailscaleStatus.ExitNodeStatus.ID) {
-                            const exitNodeID = tailscaleStatus.ExitNodeStatus.ID;
-                            
-                            // Look for the exit node in the peer list
-                            if (tailscaleStatus.Peer && tailscaleStatus.Peer[exitNodeID]) {
-                                const exitNode = tailscaleStatus.Peer[exitNodeID];
-                                let exitNodeName = exitNode.DNSName || exitNode.HostName || 'Unknown';
-                                
-                                // Clean up the name (remove .tail-scale.ts.net suffix if present)
-                                exitNodeName = exitNodeName.replace(/\..*$/, '');
-                                
-                                return `Using ${exitNodeName} Tailscale Exit Node`;
+                        // Parse HTML to look for exit node information
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(htmlContent, 'text/html');
+                        
+                        // Look for "Exit node" text followed by the node name
+                        const textNodes = [];
+                        const walker = document.createTreeWalker(
+                            doc.body,
+                            NodeFilter.SHOW_TEXT,
+                            null,
+                            false
+                        );
+                        
+                        let node;
+                        while (node = walker.nextNode()) {
+                            textNodes.push(node.textContent.trim());
+                        }
+                        
+                        // Find "Exit node" and get the next non-empty text node
+                        for (let i = 0; i < textNodes.length; i++) {
+                            if (textNodes[i] === 'Exit node') {
+                                // Look for the exit node name in the next few text nodes
+                                for (let j = i + 1; j < Math.min(i + 5, textNodes.length); j++) {
+                                    const nextText = textNodes[j];
+                                    if (nextText && nextText.length > 0 && !nextText.match(/^\s*$/)) {
+                                        console.log(`Found exit node: ${nextText}`);
+                                        return `Using ${nextText} Tailscale Exit Node`;
+                                    }
+                                }
                             }
                         }
                         
-                        console.log('Tailscale connected but no exit node in use');
+                        console.log('Tailscale connected but no exit node detected in HTML');
                         return null;
                     } else {
-                        console.log('Tailscale API not accessible');
+                        console.log('Tailscale web interface not accessible');
                         return null;
                     }
                 } catch (error) {
