@@ -1032,8 +1032,8 @@
                         externalIPElement.textContent = ip;
                         console.log(`Successfully set external IP: ${ip}`);
                         
-                        // Now perform whois lookup for organization
-                        fetchOrganization(ip);
+                        // Now perform IP lookup for rDNS and organization
+                        fetchIPInfo(ip);
                         return;
                     }
                 }
@@ -1044,13 +1044,13 @@
                 externalIPElement.style.fontWeight = 'normal';
             }
             
-            // Fetch organization info for the IP
-            async function fetchOrganization(ip) {
+            // Fetch organization and rDNS info for the IP
+            async function fetchIPInfo(ip) {
                 try {
-                    console.log(`Looking up organization for IP: ${ip}`);
+                    console.log(`Looking up organization and rDNS for IP: ${ip}`);
                     
                     const formData = new FormData();
-                    formData.append('action', 'whois_ip');
+                    formData.append('action', 'ip_lookup');
                     formData.append('ip', ip);
                     
                     const response = await fetch('dhr-web.php', {
@@ -1060,21 +1060,31 @@
                     
                     if (response.ok) {
                         const data = await response.json();
-                        if (data.organization && data.organization !== 'Unknown') {
-                            console.log(`Organization found: ${data.organization}`);
-                            externalIPElement.textContent = `${ip} (${data.organization})`;
-                        } else {
-                            console.log('No organization found or unknown');
-                            // Keep just the IP if no organization found
-                            externalIPElement.textContent = ip;
+                        console.log('IP lookup response:', data);
+                        
+                        // Build the display string
+                        let displayText = ip;
+                        
+                        // Add rDNS if available
+                        if (data.rdns) {
+                            displayText += ` | ${data.rdns}`;
+                            console.log(`rDNS found: ${data.rdns}`);
                         }
+                        
+                        // Add organization if available and not "Unknown"
+                        if (data.organization && data.organization !== 'Unknown') {
+                            displayText += ` | ${data.organization}`;
+                            console.log(`Organization found: ${data.organization}`);
+                        }
+                        
+                        externalIPElement.textContent = displayText;
                     } else {
-                        console.warn('Failed to fetch organization info');
-                        // Keep just the IP if whois fails
+                        console.warn('Failed to fetch IP info');
+                        // Keep just the IP if lookup fails
                         externalIPElement.textContent = ip;
                     }
                 } catch (error) {
-                    console.warn('Error fetching organization info:', error);
+                    console.warn('Error fetching IP info:', error);
                     // Keep just the IP if there's an error
                     externalIPElement.textContent = ip;
                 }

@@ -54,8 +54,6 @@ class DomainHealthReporter {
         echo "<div class='info-grid'>";
         echo "<div class='info-item'><strong>Target:</strong> <span class='domain'>{$this->domain}</span></div>";
         echo "<div class='info-item'><strong>Time:</strong> {$timestamp}</div>";
-        echo "</div>";
-        echo "<div class='info-grid'>";
         echo "<div class='info-item'><strong>Using:</strong> <span class='dns-server'>{$dnsInfo}</span></div>";
         echo "</div>";
         echo "<div class='info-grid'>";
@@ -108,6 +106,25 @@ class DomainHealthReporter {
             }
         }
         return 'Unknown';
+    }
+    
+    public function getRdnsInfo($ip) {
+        // Perform reverse DNS lookup using dig
+        $cmd = "dig +short -x " . escapeshellarg($ip) . " 2>/dev/null";
+        $output = shell_exec($cmd);
+        
+        if ($output) {
+            $rdns = trim($output);
+            // Remove trailing dot if present
+            $rdns = rtrim($rdns, '.');
+            
+            // Basic validation - should contain at least one dot and no spaces
+            if (!empty($rdns) && strpos($rdns, '.') !== false && strpos($rdns, ' ') === false) {
+                return $rdns;
+            }
+        }
+        
+        return null;
     }
     
     private function analyzeHostInfo() {
@@ -2157,8 +2174,8 @@ class DomainHealthReporter {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = trim($_POST['action'] ?? 'analyze');
     
-    if ($action === 'whois_ip') {
-        // Handle IP whois request
+    if ($action === 'ip_lookup') {
+        // Handle IP lookup request (whois + rDNS)
         $ip = trim($_POST['ip'] ?? '');
         
         if (empty($ip)) {
@@ -2173,16 +2190,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         try {
-            $reporter = new DomainHealthReporter('example.com'); // Dummy domain for whois lookup
+            $reporter = new DomainHealthReporter('example.com'); // Dummy domain for lookups
+            
+            // Get organization info
             $orgInfo = $reporter->getOrgInfo($ip);
             
-            if ($orgInfo) {
-                echo json_encode(['organization' => $orgInfo]);
-            } else {
-                echo json_encode(['organization' => 'Unknown']);
-            }
+            // Get rDNS info
+            $rdns = $reporter->getRdnsInfo($ip);
+            
+            echo json_encode([
+                'organization' => $orgInfo ?: 'Unknown',
+                'rdns' => $rdns
+            ]);
         } catch (Exception $e) {
-            echo json_encode(['error' => 'Error performing whois lookup: ' . htmlspecialchars($e->getMessage())]);
+            echo json_encode(['error' => 'Error performing IP lookup: ' . htmlspecialchars($e->getMessage())]);
         }
         exit;
     } else if ($action === 'dig_trace') {
