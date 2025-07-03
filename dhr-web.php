@@ -2217,7 +2217,7 @@ class DomainHealthReporter {
         
         // Execute MTR command with full path
         // Try common MTR locations
-        $mtrPaths = ['/usr/bin/mtr', '/usr/local/bin/mtr', '/bin/mtr', 'mtr'];
+        $mtrPaths = ['/usr/sbin/mtr', '/usr/bin/mtr', '/usr/local/bin/mtr', '/bin/mtr', 'mtr'];
         $mtrCommand = null;
         
         foreach ($mtrPaths as $path) {
