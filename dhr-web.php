@@ -2231,7 +2231,7 @@ class DomainHealthReporter {
             return "Error: MTR command not found on server";
         }
         
-        $command = "{$mtrCommand} -4 -w -c 10 --order \"LSB\" -i 0.1 {$ipAddress} 2>&1 | grep -v \"Start:\"";
+        $command = "{$mtrCommand} -4rwzc5 -oLSB {$ipAddress} 2>&1 | grep -v \"Start:\"";
         $output = shell_exec($command);
         
         if ($output === null) {
