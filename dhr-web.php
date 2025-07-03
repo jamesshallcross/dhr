@@ -57,7 +57,7 @@ class DomainHealthReporter {
         echo "<div class='info-item'><strong>Using:</strong> <span class='dns-server'>{$dnsInfo}</span></div>";
         echo "</div>";
         echo "<div class='info-grid'>";
-        echo "<div class='info-item'><strong>Local External IP:</strong> <span id='external-ip' class='external-ip'>Loading...</span></div>";
+        echo "<div class='info-item'><strong><a href='local-info.html' class='external-ip-link' target='_blank'>Local External IP:</a></strong> <span id='external-ip' class='external-ip'>Loading...</span></div>";
         echo "</div>";
         echo "</div>";
     }
@@ -2143,6 +2143,16 @@ class DomainHealthReporter {
             .external-ip {
                 color: #4CAF50 !important;
                 font-weight: bold !important;
+            }
+            .external-ip-link {
+                color: inherit !important;
+                text-decoration: none !important;
+                border-bottom: 1px dotted currentColor;
+                cursor: pointer;
+            }
+            .external-ip-link:hover {
+                text-decoration: underline !important;
+                opacity: 0.8;
             }
         </style>
         ";
