@@ -976,6 +976,78 @@
             });
         });
         
+        // External IP detection
+        function fetchExternalIP() {
+            const externalIPElement = document.getElementById('external-ip');
+            if (!externalIPElement) return; // Element doesn't exist yet
+            
+            // Try multiple IP detection services for reliability
+            const ipServices = [
+                'https://icanhazip.com',
+                'https://api.ipify.org',
+                'https://ipecho.net/plain',
+                'https://myexternalip.com/raw'
+            ];
+            
+            async function tryService(url) {
+                try {
+                    const response = await fetch(url, { 
+                        method: 'GET',
+                        timeout: 5000
+                    });
+                    if (response.ok) {
+                        const ip = (await response.text()).trim();
+                        // Basic IP validation
+                        if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip)) {
+                            return ip;
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`Failed to get IP from ${url}:`, error);
+                }
+                return null;
+            }
+            
+            // Try each service until one works
+            async function detectIP() {
+                for (const service of ipServices) {
+                    const ip = await tryService(service);
+                    if (ip) {
+                        externalIPElement.textContent = ip;
+                        return;
+                    }
+                }
+                // If all services fail
+                externalIPElement.textContent = 'Unable to detect';
+                externalIPElement.style.color = '#999';
+                externalIPElement.style.fontWeight = 'normal';
+            }
+            
+            detectIP();
+        }
+        
+        // Fetch external IP when page loads
+        document.addEventListener('DOMContentLoaded', fetchExternalIP);
+        
+        // Re-fetch external IP when new analysis is loaded
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === Node.ELEMENT_NODE && node.getElementById && node.getElementById('external-ip')) {
+                            setTimeout(fetchExternalIP, 100);
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Observe the results container for new content
+        const resultsContainer = document.getElementById('results');
+        if (resultsContainer) {
+            observer.observe(resultsContainer, { childList: true, subtree: true });
+        }
+        
         // Domain history management
         const DOMAIN_HISTORY_KEY = 'dhr_domain_history';
         const MAX_HISTORY_ITEMS = 10;
