@@ -334,9 +334,10 @@
         });
 
         // Utility functions
-        function updateTest(testId, value, status = 'success') {
-            const valueElement = document.querySelector(`#${testId} .test-value`);
-            const statusElement = document.querySelector(`#${testId} .test-status`);
+        function updateTest(valueElementId, value, status = 'success') {
+            const valueElement = document.getElementById(valueElementId);
+            const testContainer = valueElement ? valueElement.closest('.test-item') : null;
+            const statusElement = testContainer ? testContainer.querySelector('.test-status') : null;
             
             if (valueElement) valueElement.textContent = value;
             if (statusElement) {
