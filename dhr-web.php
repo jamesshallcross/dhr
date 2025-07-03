@@ -1903,6 +1903,7 @@ class DomainHealthReporter {
             .dark .header-section { background: #3d3d3d; }
             .light .header-section { background: #f8f9fa; }
             .info-grid { display: flex; justify-content: space-between; align-items: center; }
+            .info-grid + .info-grid { margin-top: 8px; }
             .info-item { font-size: 13px; transition: color 0.3s; white-space: nowrap; }
             .info-item:first-child { flex: 0 0 auto; }
             .info-item:nth-child(2) { flex: 0 0 auto; text-align: center; }
