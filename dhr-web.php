@@ -1878,7 +1878,25 @@ class DomainHealthReporter {
     }
     
     public function analyze() {
-        
+        $this->outputCSS();
+        $this->printHeader();
+        // Note: Individual sections will be loaded separately via AJAX
+    }
+    
+    public function analyzeComplete() {
+        $this->outputCSS();
+        $this->printHeader();
+        $this->analyzeHostInfo();
+        $this->analyzeRedirects();
+        $this->analyzeSSLCertificate();
+        $this->analyzeDnsRecords();
+        $this->analyzeDomainInfo();
+        $this->analyzeFramework();
+        $this->analyzeGtmAnalytics();
+        $this->analyzeEmailSecurity();
+    }
+    
+    private function outputCSS() {
         echo "
         <style>
             .header-section { margin-bottom: 10px; padding: 8px; border-radius: 3px; transition: background-color 0.3s; }
@@ -2127,16 +2145,37 @@ class DomainHealthReporter {
             }
         </style>
         ";
-        
-        $this->printHeader();
-        $this->analyzeHostInfo();
-        $this->analyzeRedirects();
-        $this->analyzeSSLCertificate();
-        $this->analyzeDnsRecords();
-        $this->analyzeDomainInfo();
-        $this->analyzeFramework();
-        $this->analyzeGtmAnalytics();
-        $this->analyzeEmailSecurity();
+    }
+    
+    public function analyzeSection($section) {
+        switch ($section) {
+            case 'host':
+                $this->analyzeHostInfo();
+                break;
+            case 'redirects':
+                $this->analyzeRedirects();
+                break;
+            case 'ssl':
+                $this->analyzeSSLCertificate();
+                break;
+            case 'dns':
+                $this->analyzeDnsRecords();
+                break;
+            case 'domain':
+                $this->analyzeDomainInfo();
+                break;
+            case 'framework':
+                $this->analyzeFramework();
+                break;
+            case 'analytics':
+                $this->analyzeGtmAnalytics();
+                break;
+            case 'email':
+                $this->analyzeEmailSecurity();
+                break;
+            default:
+                echo "<div class='error'>Unknown section: " . htmlspecialchars($section) . "</div>";
+        }
     }
     
     public function performDigTrace($hostname, $recordType = 'A', $dnsServer = null) {
@@ -2194,6 +2233,7 @@ class DomainHealthReporter {
 // Handle POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = trim($_POST['action'] ?? 'analyze');
+    $section = trim($_POST['section'] ?? '');
     
     if ($action === 'ip_lookup') {
         // Handle IP lookup request (whois + rDNS)
@@ -2258,7 +2298,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         try {
             $reporter = new DomainHealthReporter($domain, $dnsServer ?: null);
-            $reporter->analyze();
+            
+            if ($section) {
+                // Handle individual section request
+                $reporter->analyzeSection($section);
+            } else {
+                // Handle full analysis with CSS
+                $reporter->analyze();
+            }
         } catch (Exception $e) {
             echo "<div class='error'>Error analyzing domain: " . htmlspecialchars($e->getMessage()) . "</div>";
         }

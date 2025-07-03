@@ -954,27 +954,88 @@
                 formData.append('dns_server', finalDnsServer);
             }
             
-            // Submit to PHP backend
-            fetch('dhr-web.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(data => {
-                document.getElementById('loading').style.display = 'none';
-                const resultsDiv = document.getElementById('results');
-                resultsDiv.innerHTML = data;
-                resultsDiv.style.display = 'block';
-                resultsDiv.className = 'results';
-            })
-            .catch(error => {
-                document.getElementById('loading').style.display = 'none';
-                const resultsDiv = document.getElementById('results');
-                resultsDiv.innerHTML = '<h3>Error</h3><p>Failed to analyze domain: ' + error.message + '</p>';
-                resultsDiv.style.display = 'block';
-                resultsDiv.className = 'results error';
-            });
+            // Submit to PHP backend with progressive section loading
+            loadDomainAnalysis(domain, finalDnsServer);
         });
+        
+        // Progressive domain analysis loading
+        async function loadDomainAnalysis(domain, dnsServer) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            resultsDiv.style.display = 'block';
+            resultsDiv.className = 'results';
+            
+            // Sections in order of importance
+            const sections = [
+                { id: 'host', name: 'Host Information' },
+                { id: 'redirects', name: 'HTTP/HTTPS Redirects' },
+                { id: 'ssl', name: 'SSL Certificate' },
+                { id: 'dns', name: 'DNS Records' },
+                { id: 'domain', name: 'Domain Information' },
+                { id: 'framework', name: 'Framework Detection' },
+                { id: 'analytics', name: 'GTM/Analytics' },
+                { id: 'email', name: 'Email Security' }
+            ];
+            
+            try {
+                // First load initial setup with CSS and header
+                const initialFormData = new FormData();
+                initialFormData.append('domain', domain);
+                if (dnsServer) {
+                    initialFormData.append('dns_server', dnsServer);
+                }
+                
+                console.log('Loading initial setup and CSS...');
+                const initialResponse = await fetch('dhr-web.php', {
+                    method: 'POST',
+                    body: initialFormData
+                });
+                
+                if (!initialResponse.ok) throw new Error('Initial request failed');
+                
+                const initialData = await initialResponse.text();
+                resultsDiv.innerHTML = initialData;
+                
+                document.getElementById('loading').style.display = 'none';
+                console.log('Initial setup complete');
+                
+                // Now load each section progressively
+                for (const section of sections) {
+                    console.log(`Loading section: ${section.name}`);
+                    
+                    const sectionFormData = new FormData();
+                    sectionFormData.append('domain', domain);
+                    if (dnsServer) {
+                        sectionFormData.append('dns_server', dnsServer);
+                    }
+                    sectionFormData.append('section', section.id);
+                    
+                    try {
+                        const sectionResponse = await fetch('dhr-web.php', {
+                            method: 'POST',
+                            body: sectionFormData
+                        });
+                        
+                        if (sectionResponse.ok) {
+                            const sectionData = await sectionResponse.text();
+                            resultsDiv.innerHTML += sectionData;
+                            console.log(`Loaded section: ${section.name}`);
+                        } else {
+                            console.error(`Failed to load section: ${section.name}`);
+                        }
+                    } catch (sectionError) {
+                        console.error(`Error loading section ${section.name}:`, sectionError);
+                    }
+                }
+                
+                console.log('All sections loaded');
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                resultsDiv.innerHTML = '<h3>Error</h3><p>Failed to analyze domain: ' + error.message + '</p>';
+                resultsDiv.className = 'results error';
+                console.error('Analysis error:', error);
+            }
+        }
         
         // External IP detection
         function fetchExternalIP() {
