@@ -556,13 +556,13 @@
                     // Use more conservative detection since multiple models share dimensions
                     if (pixelRatio === 3) {
                         if (screenWidth === 375 || screenHeight === 375) {
-                            deviceType = 'iPhone mini';
-                        } else if (screenWidth === 414 || screenHeight === 414) {
-                            deviceType = 'iPhone 13/14/Pro';
-                        } else if (screenWidth === 428 || screenHeight === 428) {
-                            deviceType = 'iPhone Plus';
+                            deviceType = 'iPhone mini/12/13';
                         } else if (screenWidth === 390 || screenHeight === 390) {
-                            deviceType = 'iPhone Pro Max';
+                            deviceType = 'iPhone 12/13/14';
+                        } else if (screenWidth === 414 || screenHeight === 414) {
+                            deviceType = 'iPhone Pro/Pro Max';
+                        } else if (screenWidth === 428 || screenHeight === 428) {
+                            deviceType = 'iPhone Plus/Max';
                         } else if (screenWidth === 393 || screenHeight === 393) {
                             deviceType = 'iPhone 15 Pro';
                         } else {
