@@ -1173,18 +1173,27 @@
                         
                         // Cache the result and update display
                         cachedExternalIPInfo = displayText;
-                        externalIPElement.textContent = displayText;
+                        externalIPElement.innerHTML = displayText;
+                        
+                        // Make the IP address clickable for MTR trace
+                        makeExternalIPClickable(ip);
                     } else {
                         console.warn('Failed to fetch IP info');
                         // Keep just the IP if lookup fails
                         cachedExternalIPInfo = ip;
                         externalIPElement.textContent = ip;
+                        
+                        // Make the IP address clickable for MTR trace
+                        makeExternalIPClickable(ip);
                     }
                 } catch (error) {
                     console.warn('Error fetching IP info:', error);
                     // Keep just the IP if there's an error
                     cachedExternalIPInfo = ip;
                     externalIPElement.textContent = ip;
+                    
+                    // Make the IP address clickable for MTR trace
+                    makeExternalIPClickable(ip);
                 }
             }
             
@@ -1232,6 +1241,109 @@
                     console.log('Tailscale detection failed:', error.message);
                     return null;
                 }
+            }
+            
+            // Function to make external IP clickable for MTR trace
+            function makeExternalIPClickable(ipAddress) {
+                const externalIPElement = document.getElementById('external-ip');
+                if (!externalIPElement) return;
+                
+                // Extract just the IP address from the display text
+                const ipRegex = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
+                const currentText = externalIPElement.textContent || externalIPElement.innerHTML;
+                const match = currentText.match(ipRegex);
+                
+                if (match) {
+                    const ip = match[1];
+                    const updatedContent = currentText.replace(ip, `<span class="clickable-ip" data-ip="${ip}">${ip}</span>`);
+                    externalIPElement.innerHTML = updatedContent;
+                    
+                    // Add click event listener
+                    const clickableIP = externalIPElement.querySelector('.clickable-ip');
+                    if (clickableIP) {
+                        clickableIP.addEventListener('click', function() {
+                            performMtrTrace(ip);
+                        });
+                    }
+                }
+            }
+            
+            // Function to perform MTR trace
+            async function performMtrTrace(ipAddress) {
+                console.log(`Performing MTR trace for IP: ${ipAddress}`);
+                
+                // Show modal with loading message
+                showMtrModal('Loading MTR trace...');
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'mtr_trace');
+                    formData.append('ip_address', ipAddress);
+                    
+                    const response = await fetch('dhr-web.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.error) {
+                            showMtrModal(`Error: ${data.error}`);
+                        } else {
+                            showMtrModal(data.output);
+                        }
+                    } else {
+                        showMtrModal('Error: Failed to perform MTR trace');
+                    }
+                } catch (error) {
+                    console.error('Error performing MTR trace:', error);
+                    showMtrModal('Error: Network request failed');
+                }
+            }
+            
+            // Function to show MTR modal (reuse dig trace modal)
+            function showMtrModal(content) {
+                // Remove existing modal if any
+                const existingModal = document.getElementById('mtr-modal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                // Create modal
+                const modal = document.createElement('div');
+                modal.id = 'mtr-modal';
+                modal.className = 'dig-modal';
+                modal.innerHTML = `
+                    <div class="dig-modal-content">
+                        <div class="dig-modal-header">
+                            <h3>MTR Trace Results</h3>
+                            <span class="dig-modal-close">&times;</span>
+                        </div>
+                        <div class="dig-modal-body">
+                            <pre>${content}</pre>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                modal.style.display = 'block';
+                
+                // Auto-scroll to bottom
+                const modalBody = modal.querySelector('.dig-modal-body');
+                modalBody.scrollTop = modalBody.scrollHeight;
+                
+                // Close modal event
+                const closeBtn = modal.querySelector('.dig-modal-close');
+                closeBtn.onclick = function() {
+                    modal.remove();
+                };
+                
+                // Close on outside click
+                modal.onclick = function(event) {
+                    if (event.target === modal) {
+                        modal.remove();
+                    }
+                };
             }
             
             detectIP();

@@ -2162,6 +2162,15 @@ class DomainHealthReporter {
                 color: #4CAF50 !important;
                 font-weight: bold !important;
             }
+            /* Clickable IP styling */
+            .clickable-ip {
+                cursor: pointer;
+                text-decoration: underline;
+                text-decoration-style: dotted;
+            }
+            .clickable-ip:hover {
+                opacity: 0.8;
+            }
         </style>
         ";
     }
@@ -2195,6 +2204,30 @@ class DomainHealthReporter {
             default:
                 echo "<div class='error'>Unknown section: " . htmlspecialchars($section) . "</div>";
         }
+    }
+    
+    public function performMtrTrace($ipAddress) {
+        // Sanitize IP address
+        $ipAddress = escapeshellarg($ipAddress);
+        
+        // Validate IP address format
+        if (!filter_var(trim($ipAddress, "'"), FILTER_VALIDATE_IP)) {
+            return "Error: Invalid IP address format";
+        }
+        
+        // Execute MTR command
+        $command = "mtr -4 -w -c 10 --order \"LSB\" -i 0.1 {$ipAddress} 2>&1 | grep -v \"Start:\"";
+        $output = shell_exec($command);
+        
+        if ($output === null) {
+            return "Error: Unable to execute MTR command";
+        }
+        
+        if (empty(trim($output))) {
+            return "No MTR output received";
+        }
+        
+        return trim($output);
     }
     
     public function performDigTrace($hostname, $recordType = 'A', $dnsServer = null) {
@@ -2284,6 +2317,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         } catch (Exception $e) {
             echo json_encode(['error' => 'Error performing IP lookup: ' . htmlspecialchars($e->getMessage())]);
+        }
+        exit;
+    } else if ($action === 'mtr_trace') {
+        // Handle MTR trace request
+        $ipAddress = trim($_POST['ip_address'] ?? '');
+        
+        if (empty($ipAddress)) {
+            echo json_encode(['error' => 'Please provide an IP address.']);
+            exit;
+        }
+        
+        try {
+            $reporter = new DomainHealthReporter('example.com'); // Dummy domain for MTR trace
+            $output = $reporter->performMtrTrace($ipAddress);
+            echo json_encode(['output' => $output]);
+        } catch (Exception $e) {
+            echo json_encode(['error' => 'Error performing MTR trace: ' . htmlspecialchars($e->getMessage())]);
         }
         exit;
     } else if ($action === 'dig_trace') {
