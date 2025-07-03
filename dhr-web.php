@@ -91,13 +91,30 @@ class DomainHealthReporter {
         return $output ?: '';
     }
     
+    private function whoisLookupServer($input, $server) {
+        $output = shell_exec("whois -h '$server' '$input' 2>/dev/null");
+        return $output ?: '';
+    }
+    
     public function getOrgInfo($ip) {
         $whois = $this->whoisLookup($ip);
+        
+        // Check if this IP was transferred to RIPE region
+        if (stripos($whois, 'Transferred to the RIPE region') !== false || 
+            stripos($whois, 'RIPE Network Coordination Centre') !== false) {
+            // Query RIPE whois server directly
+            $ripeWhois = $this->whoisLookupServer($ip, 'whois.ripe.net');
+            if ($ripeWhois) {
+                $whois = $ripeWhois;
+            }
+        }
+        
         $patterns = [
             '/Organization:\s*(.+?)\s*\(/i',
             '/OrgName:\s*(.+)/i',
             '/org-name:\s*(.+)/i',
-            '/descr:\s*(.+)/i'
+            '/descr:\s*(.+)/i',
+            '/netname:\s*(.+)/i'  // RIPE-specific field
         ];
         
         foreach ($patterns as $pattern) {
