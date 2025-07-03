@@ -275,19 +275,38 @@
                 const userAgent = navigator.userAgent;
                 let browserInfo = 'Unknown Browser';
                 
-                // Basic browser detection
-                if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
-                    const match = userAgent.match(/Chrome\/([0-9.]+)/);
-                    browserInfo = `Chrome ${match ? match[1] : 'Unknown Version'}`;
-                } else if (userAgent.includes('Firefox')) {
-                    const match = userAgent.match(/Firefox\/([0-9.]+)/);
-                    browserInfo = `Firefox ${match ? match[1] : 'Unknown Version'}`;
-                } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
-                    const match = userAgent.match(/Version\/([0-9.]+)/);
-                    browserInfo = `Safari ${match ? match[1] : 'Unknown Version'}`;
-                } else if (userAgent.includes('Edg')) {
-                    const match = userAgent.match(/Edg\/([0-9.]+)/);
-                    browserInfo = `Edge ${match ? match[1] : 'Unknown Version'}`;
+                console.log('Browser User Agent:', userAgent);
+                
+                // iOS Chrome detection (appears as Safari in user agent)
+                if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+                    if (userAgent.includes('CriOS')) {
+                        const match = userAgent.match(/CriOS\/([0-9.]+)/);
+                        browserInfo = `Chrome ${match ? match[1] : 'Unknown Version'}`;
+                    } else if (userAgent.includes('FxiOS')) {
+                        const match = userAgent.match(/FxiOS\/([0-9.]+)/);
+                        browserInfo = `Firefox ${match ? match[1] : 'Unknown Version'}`;
+                    } else if (userAgent.includes('EdgiOS')) {
+                        const match = userAgent.match(/EdgiOS\/([0-9.]+)/);
+                        browserInfo = `Edge ${match ? match[1] : 'Unknown Version'}`;
+                    } else if (userAgent.includes('Safari')) {
+                        const match = userAgent.match(/Version\/([0-9.]+)/);
+                        browserInfo = `Safari ${match ? match[1] : 'Unknown Version'}`;
+                    }
+                } else {
+                    // Desktop/Android browser detection
+                    if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
+                        const match = userAgent.match(/Chrome\/([0-9.]+)/);
+                        browserInfo = `Chrome ${match ? match[1] : 'Unknown Version'}`;
+                    } else if (userAgent.includes('Firefox')) {
+                        const match = userAgent.match(/Firefox\/([0-9.]+)/);
+                        browserInfo = `Firefox ${match ? match[1] : 'Unknown Version'}`;
+                    } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+                        const match = userAgent.match(/Version\/([0-9.]+)/);
+                        browserInfo = `Safari ${match ? match[1] : 'Unknown Version'}`;
+                    } else if (userAgent.includes('Edg')) {
+                        const match = userAgent.match(/Edg\/([0-9.]+)/);
+                        browserInfo = `Edge ${match ? match[1] : 'Unknown Version'}`;
+                    }
                 }
                 
                 updateTest('browser-info', browserInfo);
@@ -521,17 +540,30 @@
                 
                 // Try to detect specific device models
                 if (userAgent.includes('iPhone')) {
-                    // Try to extract iPhone model
-                    if (userAgent.includes('iPhone15')) deviceType = 'iPhone 15';
-                    else if (userAgent.includes('iPhone14')) deviceType = 'iPhone 14';
-                    else if (userAgent.includes('iPhone13')) deviceType = 'iPhone 13';
-                    else if (userAgent.includes('iPhone12')) deviceType = 'iPhone 12';
-                    else if (userAgent.includes('iPhone11')) deviceType = 'iPhone 11';
-                    else if (userAgent.includes('iPhone XS')) deviceType = 'iPhone XS';
-                    else if (userAgent.includes('iPhone XR')) deviceType = 'iPhone XR';
-                    else if (userAgent.includes('iPhone X')) deviceType = 'iPhone X';
-                    else if (userAgent.includes('iPhone SE')) deviceType = 'iPhone SE';
-                    else deviceType = 'iPhone';
+                    // iPhone models are encoded differently - try to extract from iPhone OS version and model identifiers
+                    // iPhones don't typically expose model numbers in user agent, so we'll use a different approach
+                    console.log('iPhone User Agent:', userAgent);
+                    
+                    // Try to detect based on screen resolution and other hints
+                    const screenWidth = screen.width;
+                    const screenHeight = screen.height;
+                    const pixelRatio = window.devicePixelRatio;
+                    
+                    // iPhone model detection based on screen characteristics
+                    if (pixelRatio === 3) {
+                        if (screenWidth === 393 || screenHeight === 393) deviceType = 'iPhone 15 Pro';
+                        else if (screenWidth === 390 || screenHeight === 390) deviceType = 'iPhone 14 Pro';
+                        else if (screenWidth === 428 || screenHeight === 428) deviceType = 'iPhone 14 Plus';
+                        else if (screenWidth === 414 || screenHeight === 414) deviceType = 'iPhone 13/14';
+                        else if (screenWidth === 375 || screenHeight === 375) deviceType = 'iPhone 12/13 mini';
+                        else deviceType = 'iPhone (Pro model)';
+                    } else if (pixelRatio === 2) {
+                        if (screenWidth === 414 || screenHeight === 414) deviceType = 'iPhone 11/XR';
+                        else if (screenWidth === 375 || screenHeight === 375) deviceType = 'iPhone SE';
+                        else deviceType = 'iPhone';
+                    } else {
+                        deviceType = 'iPhone';
+                    }
                 } else if (userAgent.includes('iPad')) {
                     // Try to extract iPad model
                     if (userAgent.includes('iPad Pro')) deviceType = 'iPad Pro';
