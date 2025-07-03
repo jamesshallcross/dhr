@@ -54,7 +54,11 @@ class DomainHealthReporter {
         echo "<div class='info-grid'>";
         echo "<div class='info-item'><strong>Target:</strong> <span class='domain'>{$this->domain}</span></div>";
         echo "<div class='info-item'><strong>Time:</strong> {$timestamp}</div>";
+        echo "</div>";
+        echo "<div class='info-grid'>";
         echo "<div class='info-item'><strong>Using:</strong> <span class='dns-server'>{$dnsInfo}</span></div>";
+        echo "</div>";
+        echo "<div class='info-grid'>";
         echo "<div class='info-item'><strong>Local External IP:</strong> <span id='external-ip' class='external-ip'>Loading...</span></div>";
         echo "</div>";
         echo "</div>";
@@ -89,7 +93,7 @@ class DomainHealthReporter {
         return $output ?: '';
     }
     
-    private function getOrgInfo($ip) {
+    public function getOrgInfo($ip) {
         $whois = $this->whoisLookup($ip);
         $patterns = [
             '/Organization:\s*(.+?)\s*\(/i',
@@ -2153,7 +2157,35 @@ class DomainHealthReporter {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = trim($_POST['action'] ?? 'analyze');
     
-    if ($action === 'dig_trace') {
+    if ($action === 'whois_ip') {
+        // Handle IP whois request
+        $ip = trim($_POST['ip'] ?? '');
+        
+        if (empty($ip)) {
+            echo json_encode(['error' => 'Please provide an IP address.']);
+            exit;
+        }
+        
+        // Validate IP format
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            echo json_encode(['error' => 'Invalid IP address format.']);
+            exit;
+        }
+        
+        try {
+            $reporter = new DomainHealthReporter('example.com'); // Dummy domain for whois lookup
+            $orgInfo = $reporter->getOrgInfo($ip);
+            
+            if ($orgInfo) {
+                echo json_encode(['organization' => $orgInfo]);
+            } else {
+                echo json_encode(['organization' => 'Unknown']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['error' => 'Error performing whois lookup: ' . htmlspecialchars($e->getMessage())]);
+        }
+        exit;
+    } else if ($action === 'dig_trace') {
         // Handle dig trace request
         $hostname = trim($_POST['hostname'] ?? '');
         $recordType = trim($_POST['record_type'] ?? 'A');
