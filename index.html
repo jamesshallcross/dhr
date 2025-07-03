@@ -961,6 +961,7 @@
         // Progressive domain analysis loading
         async function loadDomainAnalysis(domain, dnsServer) {
             isProgressiveLoading = true; // Disable external IP observer during progressive loading
+            cachedExternalIPInfo = null; // Clear cached external IP info for new analysis
             
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = '';
@@ -1154,8 +1155,20 @@
                         // Check for Tailscale exit node usage
                         const tailscaleInfo = await checkTailscaleExitNode();
                         if (tailscaleInfo) {
-                            displayText += ` | ${tailscaleInfo}`;
+                            // Show exit node on separate line
+                            const exitNodeItem = document.getElementById('tailscale-exit-node-item');
+                            const exitNodeSpan = document.getElementById('tailscale-exit-node');
+                            if (exitNodeItem && exitNodeSpan) {
+                                exitNodeSpan.textContent = tailscaleInfo;
+                                exitNodeItem.style.display = 'block';
+                            }
                             console.log(`Tailscale exit node detected: ${tailscaleInfo}`);
+                        } else {
+                            // Hide exit node line if not using one
+                            const exitNodeItem = document.getElementById('tailscale-exit-node-item');
+                            if (exitNodeItem) {
+                                exitNodeItem.style.display = 'none';
+                            }
                         }
                         
                         // Cache the result and update display
@@ -1175,6 +1188,9 @@
                 }
             }
             
+            // Tailscale exit node detection
+            // NOTE: This only works on Chrome with "CORS Unblock" extension installed and activated
+            // to bypass mixed content and CORS restrictions when accessing HTTP Tailscale API from HTTPS page
             async function checkTailscaleExitNode() {
                 try {
                     console.log('Checking for Tailscale exit node usage via API...');
@@ -1202,7 +1218,7 @@
                             exitNodeName = exitNodeName.replace(/\.tail[^.]*\.ts\.net\.?$/, '');
                             
                             console.log(`Found exit node: ${exitNodeName}`);
-                            return `Using ${exitNodeName} Tailscale Exit Node`;
+                            return exitNodeName;
                         } else {
                             console.log('Tailscale connected but no exit node in use');
                             return null;

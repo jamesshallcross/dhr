@@ -59,6 +59,9 @@ class DomainHealthReporter {
         echo "<div class='info-grid'>";
         echo "<div class='info-item'><strong><a href='local-info.html' class='external-ip-link'>Local External IP:</a></strong> <span id='external-ip' class='external-ip'>Loading...</span></div>";
         echo "</div>";
+        echo "<div class='info-grid'>";
+        echo "<div class='info-item' id='tailscale-exit-node-item' style='display: none;'><strong>Tailscale Exit Node:</strong> <span id='tailscale-exit-node' class='exit-node-name'></span></div>";
+        echo "</div>";
         echo "</div>";
     }
     
@@ -2153,6 +2156,11 @@ class DomainHealthReporter {
             .external-ip-link:hover {
                 text-decoration: underline !important;
                 opacity: 0.8;
+            }
+            /* Tailscale exit node styling */
+            .exit-node-name {
+                color: #4CAF50 !important;
+                font-weight: bold !important;
             }
         </style>
         ";
