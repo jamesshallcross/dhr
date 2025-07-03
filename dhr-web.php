@@ -102,7 +102,10 @@ class DomainHealthReporter {
         
         foreach ($patterns as $pattern) {
             if (preg_match($pattern, $whois, $matches)) {
-                return trim($matches[1]);
+                $org = trim($matches[1]);
+                // Remove trailing dot if present
+                $org = rtrim($org, '.');
+                return $org;
             }
         }
         return 'Unknown';
