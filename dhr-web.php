@@ -1878,6 +1878,10 @@ class DomainHealthReporter {
     }
     
     public function analyze() {
+        // Enable output buffering for progressive display
+        if (ob_get_level()) ob_end_flush();
+        ob_start();
+        
         echo "
         <style>
             .header-section { margin-bottom: 10px; padding: 8px; border-radius: 3px; transition: background-color 0.3s; }
@@ -2128,14 +2132,37 @@ class DomainHealthReporter {
         ";
         
         $this->printHeader();
+        $this->flushOutput();
+        
         $this->analyzeHostInfo();
+        $this->flushOutput();
+        
         $this->analyzeRedirects();
+        $this->flushOutput();
+        
         $this->analyzeSSLCertificate();
+        $this->flushOutput();
+        
         $this->analyzeDnsRecords();
+        $this->flushOutput();
+        
         $this->analyzeDomainInfo();
+        $this->flushOutput();
+        
         $this->analyzeFramework();
+        $this->flushOutput();
+        
         $this->analyzeGtmAnalytics();
+        $this->flushOutput();
+        
         $this->analyzeEmailSecurity();
+        $this->flushOutput();
+    }
+    
+    private function flushOutput() {
+        ob_flush();
+        flush();
+        usleep(100000); // Small delay (0.1 seconds) for visual effect
     }
     
     public function performDigTrace($hostname, $recordType = 'A', $dnsServer = null) {
