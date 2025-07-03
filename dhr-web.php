@@ -2215,8 +2215,23 @@ class DomainHealthReporter {
             return "Error: Invalid IP address format";
         }
         
-        // Execute MTR command
-        $command = "mtr -4 -w -c 10 --order \"LSB\" -i 0.1 {$ipAddress} 2>&1 | grep -v \"Start:\"";
+        // Execute MTR command with full path
+        // Try common MTR locations
+        $mtrPaths = ['/usr/bin/mtr', '/usr/local/bin/mtr', '/bin/mtr', 'mtr'];
+        $mtrCommand = null;
+        
+        foreach ($mtrPaths as $path) {
+            if ($path === 'mtr' || file_exists($path)) {
+                $mtrCommand = $path;
+                break;
+            }
+        }
+        
+        if (!$mtrCommand) {
+            return "Error: MTR command not found on server";
+        }
+        
+        $command = "{$mtrCommand} -4 -w -c 10 --order \"LSB\" -i 0.1 {$ipAddress} 2>&1 | grep -v \"Start:\"";
         $output = shell_exec($command);
         
         if ($output === null) {
