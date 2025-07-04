@@ -2284,7 +2284,14 @@ class DomainHealthReporter {
         if (ob_get_level()) ob_flush();
         flush();
         
-        // Send progress updates while MTR runs
+        // Create a temporary file for output
+        $tempFile = tempnam(sys_get_temp_dir(), 'mtr_');
+        $command = "{$mtrCommand} -4rwzc5 {$ipAddress} > {$tempFile} 2>&1 &";
+        
+        // Start the command in background
+        $pid = shell_exec($command);
+        
+        // Send progress updates while waiting
         $progressMessages = [
             'Discovering network path...',
             'Sending packets to measure latency...',
@@ -2294,28 +2301,19 @@ class DomainHealthReporter {
         ];
         
         $startTime = time();
-        $handle = popen($command, 'r');
-        
-        if (!$handle) {
-            echo "data: " . json_encode(['error' => 'Unable to execute MTR command']) . "\n\n";
-            if (ob_get_level()) ob_flush();
-            flush();
-            return;
-        }
-        
-        // Send progress messages every 2 seconds while waiting
         $progressIndex = 0;
         $lastProgressTime = $startTime;
         
-        // Set stream to non-blocking mode
-        stream_set_blocking($handle, false);
-        
-        $allOutput = '';
-        while (!feof($handle)) {
-            $line = fgets($handle);
-            
-            if ($line !== false) {
-                $allOutput .= $line;
+        // Check if process is still running and send progress updates
+        while (true) {
+            // Check if output file has content (process completed)
+            if (file_exists($tempFile) && filesize($tempFile) > 0) {
+                $output = file_get_contents($tempFile);
+                if (trim($output)) {
+                    // Process appears to be done
+                    sleep(1); // Give it a moment to fully complete
+                    break;
+                }
             }
             
             // Send progress update every 2 seconds
@@ -2328,8 +2326,21 @@ class DomainHealthReporter {
                 $lastProgressTime = $currentTime;
             }
             
-            usleep(100000); // Sleep 100ms
+            // Timeout after 30 seconds
+            if ($currentTime - $startTime > 30) {
+                echo "data: " . json_encode(['error' => 'MTR trace timed out after 30 seconds']) . "\n\n";
+                if (ob_get_level()) ob_flush();
+                flush();
+                unlink($tempFile);
+                return;
+            }
+            
+            sleep(1);
         }
+        
+        // Read and process the final output
+        $allOutput = file_get_contents($tempFile);
+        unlink($tempFile);
         
         // Process and send the final output
         $lines = explode("\n", trim($allOutput));
