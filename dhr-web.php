@@ -2427,34 +2427,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     } else if ($action === 'mtr_stream') {
-        // Handle MTR stream request (Server-Sent Events)
+        // Handle MTR stream request - use simple JSON response instead of SSE
         $ipAddress = trim($_POST['ip_address'] ?? '');
         
         if (empty($ipAddress)) {
-            echo "data: " . json_encode(['error' => 'Please provide an IP address.']) . "\n\n";
+            echo json_encode(['error' => 'Please provide an IP address.']);
             exit;
         }
         
-        // Set headers for Server-Sent Events
-        header('Content-Type: text/event-stream');
-        header('Cache-Control: no-cache');
-        header('Connection: keep-alive');
-        header('X-Accel-Buffering: no'); // Disable nginx buffering
-        header('Access-Control-Allow-Origin: *'); // Allow CORS
-        
-        // Disable PHP output buffering
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
-        ob_implicit_flush(true);
+        // Set JSON headers
+        header('Content-Type: application/json');
         
         try {
             $reporter = new DomainHealthReporter('example.com');
-            $reporter->streamMtrTrace($ipAddress);
+            $output = $reporter->performMtrTrace($ipAddress);
+            echo json_encode(['output' => $output]);
         } catch (Exception $e) {
-            echo "data: " . json_encode(['error' => 'Error performing MTR trace: ' . htmlspecialchars($e->getMessage())]) . "\n\n";
-            if (ob_get_level()) ob_flush();
-            flush();
+            echo json_encode(['error' => 'Error performing MTR trace: ' . htmlspecialchars($e->getMessage())]);
         }
         exit;
     } else if ($action === 'mtr_trace') {
