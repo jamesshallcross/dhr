@@ -2252,6 +2252,7 @@ class DomainHealthReporter {
         // Validate IP address format
         if (!filter_var(trim($ipAddress, "'"), FILTER_VALIDATE_IP)) {
             echo "data: " . json_encode(['error' => 'Invalid IP address format']) . "\n\n";
+            if (ob_get_level()) ob_flush();
             flush();
             return;
         }
@@ -2269,6 +2270,7 @@ class DomainHealthReporter {
         
         if (!$mtrCommand) {
             echo "data: " . json_encode(['error' => 'MTR command not found on server']) . "\n\n";
+            if (ob_get_level()) ob_flush();
             flush();
             return;
         }
@@ -2279,12 +2281,14 @@ class DomainHealthReporter {
         
         if (!$handle) {
             echo "data: " . json_encode(['error' => 'Unable to execute MTR command']) . "\n\n";
+            if (ob_get_level()) ob_flush();
             flush();
             return;
         }
         
         // Send initial start message
         echo "data: " . json_encode(['type' => 'start', 'message' => 'MTR trace started...']) . "\n\n";
+        if (ob_get_level()) ob_flush();
         flush();
         
         // Stream output line by line
@@ -2294,6 +2298,7 @@ class DomainHealthReporter {
                 $line = trim($line);
                 if (!empty($line) && strpos($line, 'Start:') === false) {
                     echo "data: " . json_encode(['type' => 'data', 'line' => $line]) . "\n\n";
+                    if (ob_get_level()) ob_flush();
                     flush();
                 }
             }
@@ -2301,6 +2306,7 @@ class DomainHealthReporter {
         
         // Send completion message
         echo "data: " . json_encode(['type' => 'complete', 'message' => 'MTR trace completed']) . "\n\n";
+        if (ob_get_level()) ob_flush();
         flush();
         
         pclose($handle);
@@ -2408,12 +2414,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: text/event-stream');
         header('Cache-Control: no-cache');
         header('Connection: keep-alive');
+        header('X-Accel-Buffering: no'); // Disable nginx buffering
+        
+        // Disable PHP output buffering
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        ob_implicit_flush(true);
         
         try {
             $reporter = new DomainHealthReporter('example.com');
             $reporter->streamMtrTrace($ipAddress);
         } catch (Exception $e) {
             echo "data: " . json_encode(['error' => 'Error performing MTR trace: ' . htmlspecialchars($e->getMessage())]) . "\n\n";
+            if (ob_get_level()) ob_flush();
+            flush();
         }
         exit;
     } else if ($action === 'mtr_trace') {
