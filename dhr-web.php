@@ -2275,9 +2275,9 @@ class DomainHealthReporter {
             return;
         }
         
-        // Use popen for real-time streaming
-        // Use report mode with simple output format
-        $command = "{$mtrCommand} -4rwzc5 --report-wide {$ipAddress} 2>&1";
+        // Use popen for real-time streaming  
+        // Use basic report mode (most compatible)
+        $command = "{$mtrCommand} -4rwzc5 {$ipAddress} 2>&1";
         
         // Send initial start message
         echo "data: " . json_encode(['type' => 'start', 'message' => 'MTR trace started...']) . "\n\n";
@@ -2335,7 +2335,7 @@ class DomainHealthReporter {
         $lines = explode("\n", trim($allOutput));
         foreach ($lines as $line) {
             $line = trim($line);
-            if (!empty($line)) {
+            if (!empty($line) && strpos($line, 'Start:') === false) {
                 echo "data: " . json_encode(['type' => 'data', 'line' => $line]) . "\n\n";
                 if (ob_get_level()) ob_flush();
                 flush();
