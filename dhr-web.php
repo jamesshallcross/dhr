@@ -2245,6 +2245,67 @@ class DomainHealthReporter {
         return trim($output);
     }
     
+    public function streamMtrTrace($ipAddress) {
+        // Sanitize IP address
+        $ipAddress = escapeshellarg($ipAddress);
+        
+        // Validate IP address format
+        if (!filter_var(trim($ipAddress, "'"), FILTER_VALIDATE_IP)) {
+            echo "data: " . json_encode(['error' => 'Invalid IP address format']) . "\n\n";
+            flush();
+            return;
+        }
+        
+        // Execute MTR command with full path
+        $mtrPaths = ['/usr/sbin/mtr', '/usr/bin/mtr', '/usr/local/bin/mtr', '/bin/mtr', 'mtr'];
+        $mtrCommand = null;
+        
+        foreach ($mtrPaths as $path) {
+            if ($path === 'mtr' || file_exists($path)) {
+                $mtrCommand = $path;
+                break;
+            }
+        }
+        
+        if (!$mtrCommand) {
+            echo "data: " . json_encode(['error' => 'MTR command not found on server']) . "\n\n";
+            flush();
+            return;
+        }
+        
+        // Use popen for real-time streaming
+        $command = "{$mtrCommand} -4rwzc5 -oLSB {$ipAddress} 2>&1";
+        $handle = popen($command, 'r');
+        
+        if (!$handle) {
+            echo "data: " . json_encode(['error' => 'Unable to execute MTR command']) . "\n\n";
+            flush();
+            return;
+        }
+        
+        // Send initial start message
+        echo "data: " . json_encode(['type' => 'start', 'message' => 'MTR trace started...']) . "\n\n";
+        flush();
+        
+        // Stream output line by line
+        while (!feof($handle)) {
+            $line = fgets($handle);
+            if ($line !== false) {
+                $line = trim($line);
+                if (!empty($line) && strpos($line, 'Start:') === false) {
+                    echo "data: " . json_encode(['type' => 'data', 'line' => $line]) . "\n\n";
+                    flush();
+                }
+            }
+        }
+        
+        // Send completion message
+        echo "data: " . json_encode(['type' => 'complete', 'message' => 'MTR trace completed']) . "\n\n";
+        flush();
+        
+        pclose($handle);
+    }
+    
     public function performDigTrace($hostname, $recordType = 'A', $dnsServer = null) {
         // Sanitize inputs
         $hostname = escapeshellarg($hostname);
@@ -2332,6 +2393,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         } catch (Exception $e) {
             echo json_encode(['error' => 'Error performing IP lookup: ' . htmlspecialchars($e->getMessage())]);
+        }
+        exit;
+    } else if ($action === 'mtr_stream') {
+        // Handle MTR stream request (Server-Sent Events)
+        $ipAddress = trim($_POST['ip_address'] ?? '');
+        
+        if (empty($ipAddress)) {
+            echo "data: " . json_encode(['error' => 'Please provide an IP address.']) . "\n\n";
+            exit;
+        }
+        
+        // Set headers for Server-Sent Events
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache');
+        header('Connection: keep-alive');
+        
+        try {
+            $reporter = new DomainHealthReporter('example.com');
+            $reporter->streamMtrTrace($ipAddress);
+        } catch (Exception $e) {
+            echo "data: " . json_encode(['error' => 'Error performing MTR trace: ' . htmlspecialchars($e->getMessage())]) . "\n\n";
         }
         exit;
     } else if ($action === 'mtr_trace') {

@@ -1268,36 +1268,96 @@
                 }
             }
             
-            // Function to perform MTR trace
-            async function performMtrTrace(ipAddress) {
+            // Function to perform MTR trace with real-time streaming
+            function performMtrTrace(ipAddress) {
                 console.log(`Performing MTR trace for IP: ${ipAddress}`);
                 
-                // Show modal with loading message
-                showMtrModal('Loading MTR trace...');
+                // Show modal with initial message
+                showMtrModal('Starting MTR trace...');
                 
-                try {
-                    const formData = new FormData();
-                    formData.append('action', 'mtr_trace');
-                    formData.append('ip_address', ipAddress);
-                    
-                    const response = await fetch('dhr-web.php', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.error) {
-                            showMtrModal(`Error: ${data.error}`);
-                        } else {
-                            showMtrModal(data.output);
-                        }
-                    } else {
-                        showMtrModal('Error: Failed to perform MTR trace');
+                // Create EventSource for Server-Sent Events
+                const formData = new FormData();
+                formData.append('action', 'mtr_stream');
+                formData.append('ip_address', ipAddress);
+                
+                // Use fetch to initiate the stream
+                fetch('dhr-web.php', {
+                    method: 'POST',
+                    body: formData
+                }).then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to start MTR stream');
                     }
-                } catch (error) {
-                    console.error('Error performing MTR trace:', error);
-                    showMtrModal('Error: Network request failed');
+                    
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    let outputLines = [];
+                    
+                    function readStream() {
+                        reader.read().then(({ done, value }) => {
+                            if (done) {
+                                console.log('MTR stream completed');
+                                return;
+                            }
+                            
+                            buffer += decoder.decode(value, { stream: true });
+                            const lines = buffer.split('\n');
+                            buffer = lines.pop(); // Keep incomplete line in buffer
+                            
+                            lines.forEach(line => {
+                                if (line.startsWith('data: ')) {
+                                    try {
+                                        const data = JSON.parse(line.substring(6));
+                                        
+                                        if (data.error) {
+                                            showMtrModal(`Error: ${data.error}`);
+                                            return;
+                                        }
+                                        
+                                        if (data.type === 'start') {
+                                            outputLines = [data.message];
+                                            updateMtrModal(outputLines.join('\n'));
+                                        } else if (data.type === 'data') {
+                                            outputLines.push(data.line);
+                                            updateMtrModal(outputLines.join('\n'));
+                                        } else if (data.type === 'complete') {
+                                            outputLines.push(''); // Add blank line
+                                            outputLines.push(data.message);
+                                            updateMtrModal(outputLines.join('\n'));
+                                            return;
+                                        }
+                                    } catch (e) {
+                                        console.error('Error parsing SSE data:', e);
+                                    }
+                                }
+                            });
+                            
+                            readStream(); // Continue reading
+                        }).catch(error => {
+                            console.error('Error reading MTR stream:', error);
+                            showMtrModal('Error: Stream connection failed');
+                        });
+                    }
+                    
+                    readStream();
+                }).catch(error => {
+                    console.error('Error starting MTR stream:', error);
+                    showMtrModal('Error: Failed to start MTR trace');
+                });
+            }
+            
+            // Function to update MTR modal content in real-time
+            function updateMtrModal(content) {
+                const modal = document.getElementById('mtr-modal');
+                if (modal) {
+                    const outputArea = modal.querySelector('.dig-trace-output pre');
+                    if (outputArea) {
+                        outputArea.textContent = content;
+                        // Auto-scroll to bottom
+                        const modalBody = modal.querySelector('.dig-trace-output');
+                        modalBody.scrollTop = modalBody.scrollHeight;
+                    }
                 }
             }
             
