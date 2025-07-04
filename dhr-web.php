@@ -2276,8 +2276,24 @@ class DomainHealthReporter {
         }
         
         // Use popen for real-time streaming
-        // Use interactive mode for real-time output, -n for no reverse DNS
-        $command = "{$mtrCommand} -4nc10 {$ipAddress} 2>&1";
+        // Use report mode with simple output format
+        $command = "{$mtrCommand} -4rwzc5 --report-wide {$ipAddress} 2>&1";
+        
+        // Send initial start message
+        echo "data: " . json_encode(['type' => 'start', 'message' => 'MTR trace started...']) . "\n\n";
+        if (ob_get_level()) ob_flush();
+        flush();
+        
+        // Send progress updates while MTR runs
+        $progressMessages = [
+            'Discovering network path...',
+            'Sending packets to measure latency...',
+            'Analyzing packet loss and response times...',
+            'Collecting statistics from network hops...',
+            'Finalizing trace results...'
+        ];
+        
+        $startTime = time();
         $handle = popen($command, 'r');
         
         if (!$handle) {
@@ -2287,38 +2303,42 @@ class DomainHealthReporter {
             return;
         }
         
-        // Send initial start message
-        echo "data: " . json_encode(['type' => 'start', 'message' => 'MTR trace started...']) . "\n\n";
-        if (ob_get_level()) ob_flush();
-        flush();
+        // Send progress messages every 2 seconds while waiting
+        $progressIndex = 0;
+        $lastProgressTime = $startTime;
         
-        // Stream output line by line
-        $lineCount = 0;
+        // Set stream to non-blocking mode
+        stream_set_blocking($handle, false);
+        
+        $allOutput = '';
         while (!feof($handle)) {
             $line = fgets($handle);
+            
             if ($line !== false) {
-                $line = trim($line);
-                if (!empty($line)) {
-                    $lineCount++;
-                    // Filter out MTR header lines and unnecessary output
-                    if (strpos($line, 'Start:') === false && 
-                        strpos($line, 'HOST:') === false && 
-                        strpos($line, 'Keys:') === false &&
-                        !preg_match('/^My traceroute/', $line) &&
-                        !preg_match('/^\s*$/', $line)) {
-                        
-                        // Send debug info for first few lines
-                        if ($lineCount <= 3) {
-                            echo "data: " . json_encode(['type' => 'debug', 'line' => "Line $lineCount: $line"]) . "\n\n";
-                            if (ob_get_level()) ob_flush();
-                            flush();
-                        }
-                        
-                        echo "data: " . json_encode(['type' => 'data', 'line' => $line]) . "\n\n";
-                        if (ob_get_level()) ob_flush();
-                        flush();
-                    }
-                }
+                $allOutput .= $line;
+            }
+            
+            // Send progress update every 2 seconds
+            $currentTime = time();
+            if ($currentTime - $lastProgressTime >= 2 && $progressIndex < count($progressMessages)) {
+                echo "data: " . json_encode(['type' => 'progress', 'message' => $progressMessages[$progressIndex]]) . "\n\n";
+                if (ob_get_level()) ob_flush();
+                flush();
+                $progressIndex++;
+                $lastProgressTime = $currentTime;
+            }
+            
+            usleep(100000); // Sleep 100ms
+        }
+        
+        // Process and send the final output
+        $lines = explode("\n", trim($allOutput));
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (!empty($line)) {
+                echo "data: " . json_encode(['type' => 'data', 'line' => $line]) . "\n\n";
+                if (ob_get_level()) ob_flush();
+                flush();
             }
         }
         

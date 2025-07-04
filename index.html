@@ -1318,6 +1318,14 @@
                                         if (data.type === 'start') {
                                             outputLines = [data.message];
                                             updateMtrModal(outputLines.join('\n'));
+                                        } else if (data.type === 'progress') {
+                                            // Update the last line with progress message
+                                            if (outputLines.length > 0) {
+                                                outputLines[outputLines.length - 1] = data.message;
+                                            } else {
+                                                outputLines.push(data.message);
+                                            }
+                                            updateMtrModal(outputLines.join('\n'));
                                         } else if (data.type === 'data') {
                                             outputLines.push(data.line);
                                             updateMtrModal(outputLines.join('\n'));
