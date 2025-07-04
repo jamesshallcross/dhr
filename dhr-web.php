@@ -2276,7 +2276,8 @@ class DomainHealthReporter {
         }
         
         // Use popen for real-time streaming
-        $command = "{$mtrCommand} -4rwzc5 -oLSB {$ipAddress} 2>&1";
+        // Use interactive mode for real-time output, -n for no reverse DNS
+        $command = "{$mtrCommand} -4nc10 {$ipAddress} 2>&1";
         $handle = popen($command, 'r');
         
         if (!$handle) {
@@ -2292,14 +2293,31 @@ class DomainHealthReporter {
         flush();
         
         // Stream output line by line
+        $lineCount = 0;
         while (!feof($handle)) {
             $line = fgets($handle);
             if ($line !== false) {
                 $line = trim($line);
-                if (!empty($line) && strpos($line, 'Start:') === false) {
-                    echo "data: " . json_encode(['type' => 'data', 'line' => $line]) . "\n\n";
-                    if (ob_get_level()) ob_flush();
-                    flush();
+                if (!empty($line)) {
+                    $lineCount++;
+                    // Filter out MTR header lines and unnecessary output
+                    if (strpos($line, 'Start:') === false && 
+                        strpos($line, 'HOST:') === false && 
+                        strpos($line, 'Keys:') === false &&
+                        !preg_match('/^My traceroute/', $line) &&
+                        !preg_match('/^\s*$/', $line)) {
+                        
+                        // Send debug info for first few lines
+                        if ($lineCount <= 3) {
+                            echo "data: " . json_encode(['type' => 'debug', 'line' => "Line $lineCount: $line"]) . "\n\n";
+                            if (ob_get_level()) ob_flush();
+                            flush();
+                        }
+                        
+                        echo "data: " . json_encode(['type' => 'data', 'line' => $line]) . "\n\n";
+                        if (ob_get_level()) ob_flush();
+                        flush();
+                    }
                 }
             }
         }

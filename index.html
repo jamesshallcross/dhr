@@ -1321,6 +1321,9 @@
                                         } else if (data.type === 'data') {
                                             outputLines.push(data.line);
                                             updateMtrModal(outputLines.join('\n'));
+                                        } else if (data.type === 'debug') {
+                                            // Debug messages - add to output but don't display in final result
+                                            console.log('MTR Debug:', data.line);
                                         } else if (data.type === 'complete') {
                                             outputLines.push(''); // Add blank line
                                             outputLines.push(data.message);
