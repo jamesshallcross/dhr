@@ -1315,7 +1315,11 @@
                                             return;
                                         }
                                         
-                                        if (data.type === 'start') {
+                                        if (data.type === 'test') {
+                                            console.log('SSE Test:', data.message);
+                                            outputLines = [data.message];
+                                            updateMtrModal(outputLines.join('\n'));
+                                        } else if (data.type === 'start') {
                                             outputLines = [data.message];
                                             updateMtrModal(outputLines.join('\n'));
                                         } else if (data.type === 'progress') {

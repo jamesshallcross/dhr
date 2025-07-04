@@ -2279,68 +2279,44 @@ class DomainHealthReporter {
         // Use basic report mode (most compatible)
         $command = "{$mtrCommand} -4rwzc5 {$ipAddress} 2>&1";
         
-        // Send initial start message
+        // Send immediate test message
+        echo "data: " . json_encode(['type' => 'test', 'message' => 'SSE connection established']) . "\n\n";
+        if (ob_get_level()) ob_flush();
+        flush();
+        
+        // Send immediate progress updates
         echo "data: " . json_encode(['type' => 'start', 'message' => 'MTR trace started...']) . "\n\n";
         if (ob_get_level()) ob_flush();
         flush();
         
-        // Create a temporary file for output
-        $tempFile = tempnam(sys_get_temp_dir(), 'mtr_');
-        $command = "{$mtrCommand} -4rwzc5 {$ipAddress} > {$tempFile} 2>&1 &";
+        echo "data: " . json_encode(['type' => 'progress', 'message' => 'Discovering network path...']) . "\n\n";
+        if (ob_get_level()) ob_flush();
+        flush();
         
-        // Start the command in background
-        $pid = shell_exec($command);
+        echo "data: " . json_encode(['type' => 'progress', 'message' => 'Sending packets to measure latency...']) . "\n\n";
+        if (ob_get_level()) ob_flush();
+        flush();
         
-        // Send progress updates while waiting
-        $progressMessages = [
-            'Discovering network path...',
-            'Sending packets to measure latency...',
-            'Analyzing packet loss and response times...',
-            'Collecting statistics from network hops...',
-            'Finalizing trace results...'
-        ];
+        echo "data: " . json_encode(['type' => 'progress', 'message' => 'Analyzing packet loss and response times...']) . "\n\n";
+        if (ob_get_level()) ob_flush();
+        flush();
         
-        $startTime = time();
-        $progressIndex = 0;
-        $lastProgressTime = $startTime;
+        // Execute MTR command normally (blocking)
+        $handle = popen($command, 'r');
         
-        // Check if process is still running and send progress updates
-        while (true) {
-            // Check if output file has content (process completed)
-            if (file_exists($tempFile) && filesize($tempFile) > 0) {
-                $output = file_get_contents($tempFile);
-                if (trim($output)) {
-                    // Process appears to be done
-                    sleep(1); // Give it a moment to fully complete
-                    break;
-                }
-            }
-            
-            // Send progress update every 2 seconds
-            $currentTime = time();
-            if ($currentTime - $lastProgressTime >= 2 && $progressIndex < count($progressMessages)) {
-                echo "data: " . json_encode(['type' => 'progress', 'message' => $progressMessages[$progressIndex]]) . "\n\n";
-                if (ob_get_level()) ob_flush();
-                flush();
-                $progressIndex++;
-                $lastProgressTime = $currentTime;
-            }
-            
-            // Timeout after 30 seconds
-            if ($currentTime - $startTime > 30) {
-                echo "data: " . json_encode(['error' => 'MTR trace timed out after 30 seconds']) . "\n\n";
-                if (ob_get_level()) ob_flush();
-                flush();
-                unlink($tempFile);
-                return;
-            }
-            
-            sleep(1);
+        if (!$handle) {
+            echo "data: " . json_encode(['error' => 'Unable to execute MTR command']) . "\n\n";
+            if (ob_get_level()) ob_flush();
+            flush();
+            return;
         }
         
-        // Read and process the final output
-        $allOutput = file_get_contents($tempFile);
-        unlink($tempFile);
+        // Read all output
+        $allOutput = '';
+        while (!feof($handle)) {
+            $allOutput .= fgets($handle);
+        }
+        pclose($handle);
         
         // Process and send the final output
         $lines = explode("\n", trim($allOutput));
@@ -2464,9 +2440,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Cache-Control: no-cache');
         header('Connection: keep-alive');
         header('X-Accel-Buffering: no'); // Disable nginx buffering
+        header('Access-Control-Allow-Origin: *'); // Allow CORS
         
         // Disable PHP output buffering
-        if (ob_get_level()) {
+        while (ob_get_level()) {
             ob_end_clean();
         }
         ob_implicit_flush(true);
