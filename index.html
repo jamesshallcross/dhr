@@ -1268,24 +1268,23 @@
                 }
             }
             
-            // Function to perform MTR trace with simple fetch
+            // Function to perform MTR trace
             function performMtrTrace(ipAddress) {
                 console.log(`Performing MTR trace for IP: ${ipAddress}`);
                 
-                // Show modal with progress message
-                showMtrModal('Starting MTR trace...\n\nThis may take 10-15 seconds, please wait...');
+                // Show modal with loading message
+                showMtrModal('Loading...');
                 
                 const formData = new FormData();
-                formData.append('action', 'mtr_stream');
+                formData.append('action', 'mtr_trace');
                 formData.append('ip_address', ipAddress);
                 
-                // Use simple fetch (no streaming)
                 fetch('dhr-web.php', {
                     method: 'POST',
                     body: formData
                 }).then(response => {
                     if (!response.ok) {
-                        throw new Error('Failed to start MTR trace');
+                        throw new Error('Failed to perform MTR trace');
                     }
                     return response.json();
                 }).then(data => {
